@@ -1,0 +1,3 @@
+# 复制本文件为 local.properties 并填写本机路径。
+# local.properties 不得提交进 Git（见 docs/HyperSS_开发文档_2.0.md 第 13 章）。
+sdk.dir=E:\\AndroidSDK\\sdk

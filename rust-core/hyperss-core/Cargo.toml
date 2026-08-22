@@ -1,0 +1,20 @@
+[package]
+name = "hyperss-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "HyperSS Rust core: long screenshot stitching, session lifecycle, project data layer"
+
+[lib]
+name = "hyperss_core"
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+uniffi.workspace = true
+rusqlite.workspace = true
+thiserror.workspace = true
+image.workspace = true
+serde.workspace = true
+serde_json.workspace = true

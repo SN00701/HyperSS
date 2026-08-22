@@ -1,0 +1,394 @@
+package com.hyperss.app.ui.settings
+
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
+import android.os.Process
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.RadioButton
+import top.yukonga.miuix.kmp.basic.Slider
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.hyperss.app.R
+import com.hyperss.app.util.Permissions
+import com.hyperss.app.ui.BlurTopBar
+import com.hyperss.app.ui.ambientGlassBackground
+import com.hyperss.app.ui.GlassSurface
+import com.hyperss.app.ui.rememberTopBarBlurFraction
+import com.hyperss.app.ui.theme.LightTextSecondary
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+
+@Composable
+fun SettingsScreen(
+    onBack: () -> Unit,
+    viewModel: SettingsViewModel = viewModel(),
+) {
+    val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    val overlayLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { viewModel.refresh() }
+    val notifLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { viewModel.refresh() }
+
+    var showDisclaimer by remember { mutableStateOf(false) }
+    var showRestartDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) { viewModel.refresh() }
+
+    val restartApp: () -> Unit = {
+        showRestartDialog = false
+        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+        intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        if (intent != null) {
+            context.startActivity(intent)
+            Handler(Looper.getMainLooper()).postDelayed({
+                Process.killProcess(Process.myPid())
+            }, 500)
+        }
+    }
+
+    // 顶部动态模糊：内容滚动时毛玻璃标题栏渐入
+    val backdrop = rememberLayerBackdrop()
+    val listState = rememberLazyListState()
+    val blurFraction = rememberTopBarBlurFraction(listState)
+    var barHeight by remember { mutableStateOf(0.dp) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // 滚动列表置于 backdrop 层下
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .layerBackdrop(backdrop).ambientGlassBackground(),
+            contentPadding = PaddingValues(
+                top = barHeight + 20.dp,
+                start = 20.dp,
+                end = 20.dp,
+                bottom = 40.dp,
+            ),
+        ) {
+            item {
+                SectionTitle(stringResource(R.string.settings_permissions))
+                GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+                    Column {
+                        PermissionRow(
+                            title = stringResource(R.string.settings_accessibility),
+                            subtitle = stringResource(R.string.settings_accessibility_desc),
+                            checked = state.hasAccessibility,
+                            onClick = {
+                                context.startActivity(Permissions.accessibilitySettingsIntent())
+                            },
+                        )
+                        PermissionRow(
+                            title = stringResource(R.string.settings_overlay),
+                            subtitle = stringResource(R.string.settings_overlay_desc),
+                            checked = state.hasOverlay,
+                            onClick = {
+                                if (!state.hasOverlay) {
+                                    runCatching {
+                                        context.startActivity(Permissions.requestOverlayIntent(context))
+                                    }
+                                } else {
+                                    overlayLauncher.launch(Permissions.requestOverlayIntent(context))
+                                }
+                            },
+                        )
+                        PermissionRow(
+                            title = stringResource(R.string.settings_notifications),
+                            subtitle = stringResource(R.string.settings_notifications_desc),
+                            checked = state.hasNotifications,
+                            onClick = {
+                                if (android.os.Build.VERSION.SDK_INT >= 33 &&
+                                    context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+                                    PackageManager.PERMISSION_GRANTED
+                                ) {
+                                    notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+                SectionTitle(stringResource(R.string.settings_appearance))
+                GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+                    Column {
+                        RadioGroup(
+                            title = stringResource(R.string.settings_language),
+                            options = listOf(
+                                "system" to stringResource(R.string.settings_language_system),
+                                "zh" to stringResource(R.string.settings_language_zh),
+                                "en" to stringResource(R.string.settings_language_en),
+                            ),
+                            selected = state.language,
+                            onSelect = {
+                                viewModel.setLanguage(it)
+                                showRestartDialog = true
+                            },
+                        )
+                        RadioGroup(
+                            title = stringResource(R.string.settings_theme),
+                            options = listOf(
+                                "system" to stringResource(R.string.settings_theme_system),
+                                "light" to stringResource(R.string.settings_theme_light),
+                                "dark" to stringResource(R.string.settings_theme_dark),
+                            ),
+                            selected = state.theme,
+                            onSelect = {
+                                viewModel.setTheme(it)
+                                showRestartDialog = true
+                            },
+                        )
+                    }
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+                SectionTitle(stringResource(R.string.settings_capture))
+                GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                    ) {
+                        var rate by remember { mutableStateOf(state.duplicateRate) }
+                        Text(
+                            stringResource(R.string.settings_duplicate_rate),
+                            style = MiuixTheme.textStyles.title3,
+                        )
+                        Text(
+                            stringResource(R.string.settings_duplicate_rate_desc),
+                            style = MiuixTheme.textStyles.footnote2,
+                            color = LightTextSecondary,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Slider(
+                                value = rate.toFloat(),
+                                onValueChange = { rate = it.toInt().coerceIn(1, 100) },
+                                onValueChangeFinished = { viewModel.setDuplicateRate(rate) },
+                                valueRange = 1f..100f,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                "$rate%",
+                                style = MiuixTheme.textStyles.body1,
+                                modifier = Modifier.width(48.dp),
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+                SectionTitle(stringResource(R.string.settings_about))
+                GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+                    Column {
+                        AboutRow(stringResource(R.string.settings_version_label), state.version)
+                        AboutRow(stringResource(R.string.settings_license), "MIT")
+                        AboutRow(stringResource(R.string.settings_privacy), stringResource(R.string.settings_privacy_desc))
+                        AboutRow(stringResource(R.string.settings_feedback), "GitHub Issues")
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(stringResource(R.string.settings_disclaimer), style = MiuixTheme.textStyles.body2, modifier = Modifier.weight(1f))
+                            TextButton(text = stringResource(R.string.settings_view), onClick = { showDisclaimer = true })
+                        }
+                    }
+                }
+            }
+        }
+        BlurTopBar(
+            backdrop = backdrop,
+            fraction = blurFraction,
+            modifier = Modifier.align(Alignment.TopCenter),
+            onHeightChanged = { barHeight = it },
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 48.dp, start = 4.dp, end = 8.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
+                }
+                Text(stringResource(R.string.settings_title), style = MiuixTheme.textStyles.title1)
+            }
+        }
+    }
+
+    if (showRestartDialog) {
+        OverlayDialog(
+            show = true,
+            title = stringResource(R.string.settings_saved_title),
+            summary = stringResource(R.string.settings_restart_message),
+            onDismissRequest = { showRestartDialog = false },
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                TextButton(
+                    text = stringResource(R.string.settings_later),
+                    onClick = { showRestartDialog = false },
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(20.dp))
+                TextButton(
+                    text = stringResource(R.string.settings_restart_now),
+                    onClick = restartApp,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                )
+            }
+        }
+    }
+
+    if (showDisclaimer) {
+        OverlayDialog(
+            show = true,
+            title = stringResource(R.string.settings_disclaimer),
+            summary = stringResource(R.string.settings_disclaimer_content),
+            onDismissRequest = { showDisclaimer = false },
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(
+                    text = stringResource(R.string.ok),
+                    onClick = { showDisclaimer = false },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(title: String) {
+    Text(
+        title,
+        style = MiuixTheme.textStyles.title3,
+        color = LightTextSecondary,
+        modifier = Modifier.padding(bottom = 8.dp),
+    )
+}
+
+@Composable
+private fun PermissionRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MiuixTheme.textStyles.body1)
+            Text(subtitle, style = MiuixTheme.textStyles.footnote2, color = LightTextSecondary)
+        }
+        Switch(checked = checked, onCheckedChange = { onClick() })
+    }
+}
+
+@Composable
+private fun RadioGroup(
+    title: String,
+    options: List<Pair<String, String>>,
+    selected: String,
+    onSelect: (String) -> Unit,
+) {
+    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+        Text(
+            title,
+            style = MiuixTheme.textStyles.title3,
+            color = LightTextSecondary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+        Column(Modifier.selectableGroup()) {
+            options.forEach { (value, label) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .selectable(selected = value == selected, onClick = { onSelect(value) })
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(selected = value == selected, onClick = null)
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text(label, style = MiuixTheme.textStyles.body1)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AboutRow(title: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(title, style = MiuixTheme.textStyles.body2, modifier = Modifier.weight(1f))
+        Text(value, style = MiuixTheme.textStyles.body2, color = LightTextSecondary)
+    }
+}

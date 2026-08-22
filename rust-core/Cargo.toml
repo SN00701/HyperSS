@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+members = ["hyperss-core", "uniffi-bindgen"]
+
+[workspace.package]
+version = "0.0.9-beta"
+edition = "2021"
+license = "MIT"
+authors = ["HyperSS Contributors"]
+repository = "https://github.com/SN00701/HyperSS"
+
+[workspace.dependencies]
+uniffi = { version = "0.32", features = ["cli"] }
+rusqlite = { version = "0.40", features = ["bundled"] }
+thiserror = "2"
+image = { version = "0.25", default-features = false, features = ["png"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+lto = true
+codegen-units = 1

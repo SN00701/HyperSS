@@ -1,0 +1,19 @@
+name: privacy-file-guard
+on: [pull_request]
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: 检查本次变更是否包含疑似隐私/密钥文件
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} ${{ github.sha }})
+          BLOCKED_PATTERN='(HyperSS/projects/|\.drafts/|\.jks$|\.keystore$|keystore\.properties$|local\.properties$|\.db$|\.sqlite3?$)'
+          MATCHED=$(echo "$CHANGED_FILES" | grep -E "$BLOCKED_PATTERN" || true)
+          if [ -n "$MATCHED" ]; then
+            echo "检测到疑似隐私/密钥文件被提交，已阻止合并："
+            echo "$MATCHED"
+            exit 1
+          fi

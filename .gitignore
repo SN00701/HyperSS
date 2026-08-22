@@ -1,0 +1,50 @@
+# ===== 隐私红线：真实用户数据（最高优先级，务必保持在最前）=====
+**/HyperSS/projects/**
+**/.drafts/**
+*.db
+*.sqlite
+*.sqlite3
+
+# ===== 签名与密钥 =====
+*.jks
+*.keystore
+keystore.properties
+*.pem
+*.p12
+
+# ===== 本地环境配置 =====
+local.properties
+*.env
+.env.local
+
+# ===== Android / Gradle 构建产物 =====
+android-app/**/build/
+android-app/.gradle/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# ===== Rust 构建产物 =====
+rust-core/target/
+Cargo.lock
+
+# ===== UniFFI 生成的绑定代码（流水线中动态生成，无需入库）=====
+android-app/core-bindings/generated/
+
+# ===== cargo-ndk 交叉编译产物（构建时自动生成，无需入库）=====
+android-app/app/src/main/jniLibs/**/*.so
+
+# ===== 本地调试日志（logcat 抓取，可能含设备隐私）=====
+hyperss_log.txt
+*_log.txt
+
+# ===== IDE / 系统文件 =====
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# ===== 日志与临时文件 =====
+*.log
+*.tmp

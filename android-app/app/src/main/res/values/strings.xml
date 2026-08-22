@@ -1,0 +1,136 @@
+<resources>
+    <string name="app_name">HyperSS</string>
+    <string name="app_slogan">智能长截图 · 项目化管理 · 本地优先</string>
+
+    <!-- 无障碍 -->
+    <string name="accessibility_service_label">HyperSS 截图助手</string>
+    <string name="accessibility_service_description">用于在自动滚动长截图时模拟滑动手势，并在 Android 11 及以上通过系统能力截取屏幕帧。本服务不会静默收集任何与截图任务无关的信息。</string>
+
+    <!-- 通用 -->
+    <string name="back">返回</string>
+    <string name="ok">知道了</string>
+    <string name="cancel">取消</string>
+    <string name="error_title">出错了</string>
+    <string name="hint">提示</string>
+
+    <!-- 首页 -->
+    <string name="home_title">HyperSS</string>
+    <string name="home_new_project">新建项目</string>
+    <string name="home_new_recorder">新建录制器</string>
+    <string name="home_empty_title">还没有项目</string>
+    <string name="home_empty_hint">点击右下角「新建项目」开始吧</string>
+    <string name="home_settings">设置</string>
+    <string name="home_delete_hint">长按卡片删除</string>
+    <string name="new_project_title">新建项目</string>
+    <string name="new_project_name_label">项目名称</string>
+    <string name="new_project_prefix_hint">前缀将自动生成：%1$s</string>
+    <string name="new_project_name_validation">仅支持中文、英文和数字</string>
+    <string name="new_project_create">创建</string>
+    <string name="delete_project_title">删除项目</string>
+    <string name="delete_project_confirm">删除项目「%1$s」？其下所有截图将被一并删除。</string>
+    <string name="delete">删除</string>
+    <string name="project_card_images">%1$d 张图</string>
+    <string name="project_settings">项目设置</string>
+    <string name="start_capture">开始截图</string>
+    <string name="permission_needed_title">需要权限</string>
+    <string name="permission_needed_message">启动截图工具条需要「无障碍服务」和「悬浮窗」权限，请先到设置中开启。</string>
+    <string name="permission_go">去开启</string>
+
+    <!-- 项目详情 -->
+    <string name="project_images">图片</string>
+    <string name="project_batch">批量管理</string>
+    <string name="project_done">完成</string>
+    <string name="project_rename_alias">重命名显示别名</string>
+    <string name="project_alias_hint">显示别名（不影响文件名）</string>
+    <string name="project_delete_selected">删除选中</string>
+    <string name="project_export_to_gallery">导出到系统相册</string>
+
+    <!-- 项目设置 -->
+    <string name="project_settings_basic">基本信息</string>
+    <string name="project_settings_prefix_hint">前缀 %1$s · %2$d 张图（重命名不影响文件名前缀）</string>
+    <string name="project_settings_mode">截图方式</string>
+    <string name="mode_auto">① 长截图</string>
+    <string name="mode_auto_desc">自动检测滚动终点，适合流式长页面</string>
+    <string name="mode_manual">② 手动滚动</string>
+    <string name="mode_manual_desc">自己滚动屏幕，滑动停止 5 秒后自动截图拼接</string>
+    <string name="mode_fixed">③ 自定义步长</string>
+    <string name="mode_fixed_desc">按固定步长滚动，需先标定</string>
+    <string name="mode_calibrated">④ 图标滑动</string>
+    <string name="mode_calibrated_desc">用 1-9 数字图标画出滚动方向，按图标顺序自动滚动截图</string>
+    <string name="project_settings_step">步长（dp）</string>
+    <string name="project_settings_step_hint">步长 ≥ 一屏高度可能导致拼接失败，建议 40~300dp</string>
+    <string name="project_settings_loop_count">循环次数</string>
+    <string name="project_settings_loop_count_value">循环次数（0 = 不限）</string>
+    <string name="project_settings_loop_count_hint">0 表示一直循环，直到实际滑动步长与图标设定不一致（如到达页面底部）自动停止</string>
+    <string name="save_settings">保存设置</string>
+    <string name="save_settings_confirm_title">保存设置</string>
+    <string name="save_settings_confirm_message">确认保存当前设置？</string>
+    <string name="confirm">确定</string>
+    <string name="saving">保存中…</string>
+    <string name="project_name_empty">项目名称不能为空</string>
+
+    <!-- 设置 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_capture">截图</string>
+    <string name="settings_duplicate_rate">结束判定重复率</string>
+    <string name="settings_duplicate_rate_desc">连续两帧相同像素占比达到该值时停止截图（到达底部 / 上下回弹）。范围 0-100%，默认 50。</string>
+    <string name="settings_permissions">权限与能力</string>
+    <string name="settings_accessibility">无障碍服务</string>
+    <string name="settings_accessibility_desc">自动滚动 + Android 11+ 截屏</string>
+    <string name="settings_overlay">悬浮窗</string>
+    <string name="settings_overlay_desc">悬浮工具条常驻</string>
+    <string name="settings_notifications">通知</string>
+    <string name="settings_notifications_desc">前台服务与中断提醒</string>
+    <string name="settings_appearance">外观</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_system">跟随系统</string>
+    <string name="settings_language_zh">中文</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_theme_light">浅色</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_theme_system">跟随系统</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_version_label">版本</string>
+    <string name="settings_license">开源许可</string>
+    <string name="settings_privacy">隐私说明</string>
+    <string name="settings_privacy_desc">本地优先 · 无网络权限 · 数据仅存本机</string>
+    <string name="settings_feedback">建议与反馈</string>
+    <string name="settings_disclaimer">免责声明</string>
+    <string name="settings_view">查看</string>
+    <string name="settings_saved_title">设置已保存</string>
+    <string name="settings_restart_message">语言 / 主题更改需要重启应用才能完全生效。是否立即重启？</string>
+    <string name="settings_restart_now">立即重启</string>
+    <string name="settings_later">稍后</string>
+    <string name="settings_disclaimer_content">HyperSS 生成的截图仅保存在本机应用私有目录，不会上传或共享。&#10;请尊重他人隐私与相关平台规则，仅在获得授权的内容上使用本工具。&#10;本工具按「现状」提供，开发者不对任何使用后果负责。</string>
+
+    <!-- 录制器 -->
+    <string name="capture_setup_title">新建录制器</string>
+    <string name="capture_target_project">目标项目</string>
+    <string name="capture_mode">截屏模式</string>
+    <string name="capture_mode_auto">① 长截图</string>
+    <string name="capture_mode_manual">② 手动滚动</string>
+    <string name="capture_mode_fixed">③ 自定义步长</string>
+    <string name="capture_mode_calibrated">④ 图标滑动</string>
+    <string name="capture_step_hint">步长（dp）</string>
+    <string name="capture_step_warning">步长 ≥ 一屏高度可能导致拼接失败，请谨慎设置</string>
+    <string name="capture_start">启动悬浮工具条</string>
+    <string name="capture_permission_hint">需要「无障碍服务」与「悬浮窗」权限才能自动滚动截屏。</string>
+    <string name="capture_progress">已完成 %1$d 帧 · 高度 %2$dpx</string>
+
+    <!-- 悬浮工具条 -->
+    <string name="toolbar_start">开始</string>
+    <string name="toolbar_pause">暂停</string>
+    <string name="toolbar_resume">继续</string>
+    <string name="toolbar_finish">完成</string>
+    <string name="toolbar_cancel">取消</string>
+    <string name="toolbar_screenshot">截图</string>
+    <string name="toolbar_paused_appearance">已暂停</string>
+
+    <!-- 通知 -->
+    <string name="notification_channel_foreground">HyperSS 截图服务</string>
+    <string name="notification_foreground_title">正在长截图</string>
+    <string name="notification_foreground_text">请勿切换应用，正在自动滚动截屏…</string>
+    <string name="notification_interrupted_title">截图已中断</string>
+    <string name="notification_interrupted_text">已保留当前进度，可在应用中继续。</string>
+</resources>
