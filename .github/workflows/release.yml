@@ -36,8 +36,8 @@ jobs:
         if: always()
         run: rm -f android-app/release.jks
 
-      - name: 上传 APK 产物
-        uses: actions/upload-artifact@v4
+      - name: 创建 GitHub Release 并附上 APK
+        uses: softprops/action-gh-release@v2
         with:
-          name: hyperss-release
-          path: android-app/app/build/outputs/apk/release/*.apk
+          generate_release_notes: true
+          files: android-app/app/build/outputs/apk/release/*.apk

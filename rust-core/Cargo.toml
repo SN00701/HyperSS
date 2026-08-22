@@ -3,7 +3,7 @@ resolver = "2"
 members = ["hyperss-core", "uniffi-bindgen"]
 
 [workspace.package]
-version = "0.0.9-beta"
+version = "0.0.10-beta"
 edition = "2021"
 license = "MIT"
 authors = ["HyperSS Contributors"]

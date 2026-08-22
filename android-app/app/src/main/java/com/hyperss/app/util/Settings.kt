@@ -42,6 +42,11 @@ object Settings {
         get() = prefs().getString("ui_language", "system") ?: "system"
         set(value) { prefs().edit().putString("ui_language", value).commit() }
 
+    /** 用户已选择「稍后」跳过的更新版本：该版本不再于启动时弹窗提醒。 */
+    var updateSkipVersion: String
+        get() = prefs().getString("update_skip_version", "") ?: ""
+        set(value) { prefs().edit().putString("update_skip_version", value).apply() }
+
     // ---------- 按项目的截图偏好 ----------
 
     private fun modeKey(projectId: Long) = "project_${projectId}_mode"

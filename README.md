@@ -6,7 +6,7 @@
 
 **智能长截图 · 项目化管理 · 本地优先**
 
-[![Version](https://img.shields.io/badge/version-0.0.9beta-blue)]()
+[![Version](https://img.shields.io/badge/version-0.0.10beta-blue)]()
 [![Platform](https://img.shields.io/badge/platform-Android%20(64--bit)-green)]()
 [![License](https://img.shields.io/badge/license-MIT-orange)]()
 
@@ -78,15 +78,16 @@ cd android-app
 
 ### 版本号
 
-版本统一由 `android-app/version.properties` 管理，当前为 **0.0.9beta**，APK `versionName` 与应用内"关于"页显示一致。
+版本统一由 `android-app/version.properties` 管理，当前为 **0.0.10beta**，APK `versionName` 与应用内"关于"页显示一致。应用启动时会自动检查 GitHub Releases 更新，也可在设置页手动检查。
 
 ## 📡 发布流程（维护者）
 
-推送 `v*` 标签触发 `.github/workflows/release.yml`，自动完成 64 位交叉编译、签名（密钥经 GitHub Secrets 注入，不入库）并上传 APK 产物。
+推送 `v*` 标签触发 `.github/workflows/release.yml`，自动完成 64 位交叉编译、签名（密钥经 GitHub Secrets 注入，不入库）、创建 GitHub Release 并附上 APK。
 
 ## 🔒 隐私承诺
 
-- 所有截图、拼接、存储均在设备本地完成，**不申请网络权限**
+- 所有截图、拼接、存储均在设备本地完成，**截图与项目数据绝不出设备**
+- 唯一的网络请求是访问 GitHub Releases 检查应用更新（只读取版本元信息，不上传任何数据）
 - 正式版不集成任何数据上报 / 统计 SDK
 - 开发协作同样遵守隐私红线：真实用户截图、数据库、签名密钥严禁进入公开仓库（见 `.gitignore` 与 CI 隐私扫描工作流）
 
@@ -106,6 +107,6 @@ cd android-app
 
 <div align="center">
 
-**当前版本：0.0.9beta** · 本项目处于早期开发阶段，功能与接口可能随时调整
+**当前版本：0.0.10beta** · 本项目处于早期开发阶段，功能与接口可能随时调整
 
 </div>

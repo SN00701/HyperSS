@@ -85,7 +85,7 @@
     <string name="settings_version_label">Version</string>
     <string name="settings_license">Open-source license</string>
     <string name="settings_privacy">Privacy</string>
-    <string name="settings_privacy_desc">Local-first 路 no network permission 路 data stays on device</string>
+    <string name="settings_privacy_desc">Local-first · data stays on device · network only for GitHub update check</string>
     <string name="settings_feedback">Feedback</string>
     <string name="settings_disclaimer">Disclaimer</string>
     <string name="settings_view">View</string>
@@ -94,6 +94,18 @@
     <string name="settings_restart_now">Restart now</string>
     <string name="settings_later">Later</string>
     <string name="settings_disclaimer_content">Screenshots produced by HyperSS are stored only in the app-private directory. Nothing is uploaded or shared.&#10;Respect others\' privacy and platform rules; only use this tool on authorized content.&#10;This tool is provided "as is" without any warranty.</string>
+
+    <string name="update_check">Check for updates</string>
+    <string name="update_check_action">Check</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_up_to_date">You are up to date</string>
+    <string name="update_new_version_title">New version available</string>
+    <string name="update_new_version_summary">Latest v%1$s (current v%2$s)</string>
+    <string name="update_notes_label">Release notes</string>
+    <string name="update_later">Later</string>
+    <string name="update_download">Update now</string>
+    <string name="update_check_failed">Update check failed, please retry later</string>
+    <string name="update_check_failed_reason">Update check failed: %1$s</string>
 
     <string name="capture_setup_title">New recorder</string>
     <string name="capture_target_project">Target project</string>

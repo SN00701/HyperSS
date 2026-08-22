@@ -51,7 +51,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hyperss.app.R
 import com.hyperss.app.util.Permissions
+import com.hyperss.app.util.Settings
 import com.hyperss.app.ui.BlurTopBar
+import com.hyperss.app.ui.UpdateAvailableDialog
 import com.hyperss.app.ui.ambientGlassBackground
 import com.hyperss.app.ui.GlassSurface
 import com.hyperss.app.ui.rememberTopBarBlurFraction
@@ -237,6 +239,27 @@ fun SettingsScreen(
                         AboutRow(stringResource(R.string.settings_license), "MIT")
                         AboutRow(stringResource(R.string.settings_privacy), stringResource(R.string.settings_privacy_desc))
                         AboutRow(stringResource(R.string.settings_feedback), "GitHub Issues")
+                        val updateState by viewModel.updateState.collectAsState()
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                stringResource(R.string.update_check),
+                                style = MiuixTheme.textStyles.body2,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(
+                                text = if (updateState == UpdateUi.Checking) {
+                                    stringResource(R.string.update_checking)
+                                } else {
+                                    stringResource(R.string.update_check_action)
+                                },
+                                onClick = { viewModel.checkUpdate() },
+                            )
+                        }
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -314,6 +337,47 @@ fun SettingsScreen(
                 )
             }
         }
+    }
+
+    // 手动检查更新的结果对话框
+    val updateState by viewModel.updateState.collectAsState()
+    when (val u = updateState) {
+        is UpdateUi.Available -> UpdateAvailableDialog(
+            newVersion = u.version,
+            currentVersion = state.version,
+            notes = u.notes,
+            onDismiss = {
+                Settings.updateSkipVersion = u.version
+                viewModel.dismissUpdateDialog()
+            },
+        )
+        UpdateUi.UpToDate -> OverlayDialog(
+            show = true,
+            title = stringResource(R.string.update_check),
+            summary = stringResource(R.string.update_up_to_date),
+            onDismissRequest = { viewModel.dismissUpdateDialog() },
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(text = stringResource(R.string.ok), onClick = { viewModel.dismissUpdateDialog() })
+            }
+        }
+        is UpdateUi.Failed -> OverlayDialog(
+            show = true,
+            title = stringResource(R.string.update_check),
+            summary = stringResource(R.string.update_check_failed_reason, u.reason),
+            onDismissRequest = { viewModel.dismissUpdateDialog() },
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(text = stringResource(R.string.ok), onClick = { viewModel.dismissUpdateDialog() })
+            }
+        }
+        else -> {}
     }
 }
 

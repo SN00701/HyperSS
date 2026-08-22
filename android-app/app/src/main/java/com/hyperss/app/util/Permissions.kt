@@ -84,7 +84,7 @@ object Notifications {
 
     fun captureNotification(context: Context): Notification =
         NotificationCompat.Builder(context, CHANNEL_FOREGROUND)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.mipmap.ic_launcher_foreground)
             .setContentTitle(context.getString(R.string.notification_foreground_title))
             .setContentText(context.getString(R.string.notification_foreground_text))
             .setOngoing(true)
@@ -93,7 +93,7 @@ object Notifications {
 
     fun interruptedNotification(context: Context): Notification =
         NotificationCompat.Builder(context, CHANNEL_FOREGROUND)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.mipmap.ic_launcher_foreground)
             .setContentTitle(context.getString(R.string.notification_interrupted_title))
             .setContentText(context.getString(R.string.notification_interrupted_text))
             .setAutoCancel(true)
