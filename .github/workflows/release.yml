@@ -25,7 +25,11 @@ jobs:
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
 
+      - name: 接受 SDK 许可（compileSdk 高版本平台需自动下载）
+        run: yes | sdkmanager --licenses > /dev/null || true
+
       - name: 打包（自动携带版本号递增逻辑）
+        working-directory: android-app
         run: ./gradlew :app:assembleRelease
         env:
           KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
