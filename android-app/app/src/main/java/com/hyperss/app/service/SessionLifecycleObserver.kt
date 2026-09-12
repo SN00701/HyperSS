@@ -21,7 +21,7 @@ object SessionLifecycleObserver {
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
-                Intent.ACTION_SCREEN_OFF -> onInterrupt("屏幕熄灭")
+                Intent.ACTION_SCREEN_OFF -> onInterrupt("screen_off")
                 Intent.ACTION_USER_PRESENT -> onUserPresent()
             }
         }
@@ -52,12 +52,12 @@ object SessionLifecycleObserver {
             packageName.startsWith("com.android.phone") ||
             packageName == appPkg
         if (controller.isActive && !controller.userPaused && target != null && target != packageName && !isSystem) {
-            onInterrupt("离开了目标应用")
+            onInterrupt("left_app")
         }
     }
 
     fun onAccessibilityInterrupted() {
-        onInterrupt("无障碍服务被中断")
+        onInterrupt("a11y")
     }
 
     fun onAccessibilityReady() {

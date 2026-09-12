@@ -137,6 +137,11 @@ dependencies {
     implementation("top.yukonga.miuix.kmp:miuix-squircle:0.9.3")
     implementation("top.yukonga.miuix.kmp:miuix-blur:0.9.3")
     implementation("top.yukonga.miuix.kmp:miuix-icons:0.9.3")
+    // Liquid Glass 液态玻璃效果库（kyant/backdrop）：对 backdrop 采样层做
+    // 折射(lens)+模糊(blur)+鲜艳度(vibrancy) 的玻璃质感，替代静态玻璃填充。
+    // blur 需 RenderEffect（API31+）、lens 需 RuntimeShader（API33+），minSdk=33 均满足。
+    implementation("io.github.kyant0:backdrop:2.0.1")
+    implementation("io.github.kyant0:shapes:1.2.1")
 }
 
 // 交叉编译 Rust 核心库（需 cargo-ndk，见 docs 第 12 章）。

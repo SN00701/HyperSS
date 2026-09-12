@@ -10,8 +10,26 @@
     <string name="back">返回</string>
     <string name="ok">知道了</string>
     <string name="cancel">取消</string>
+    <string name="save">保存</string>
+    <string name="close">关闭</string>
+    <string name="select">选择</string>
+    <string name="rename">重命名</string>
+    <string name="edit">编辑</string>
+    <string name="export">导出</string>
     <string name="error_title">出错了</string>
+    <string name="error_unknown">未知错误</string>
     <string name="hint">提示</string>
+
+    <!-- 数据层错误 -->
+    <string name="error_invalid_prefix">前缀不合法：%1$s</string>
+    <string name="error_prefix_exists">前缀已存在：%1$s</string>
+    <string name="error_project_not_found">项目不存在</string>
+    <string name="error_image_not_found">图片不存在</string>
+    <string name="error_session_not_found">会话不存在</string>
+    <string name="error_stitch_low_confidence">画面变化过大，拼接失败（置信度过低）</string>
+    <string name="error_width_mismatch">截图宽度不一致，无法拼接</string>
+    <string name="error_sequence_exhausted">序号已用尽</string>
+    <string name="error_no_draft">没有可恢复的草稿</string>
 
     <!-- 首页 -->
     <string name="home_title">HyperSS</string>
@@ -44,6 +62,63 @@
     <string name="project_alias_hint">显示别名（不影响文件名）</string>
     <string name="project_delete_selected">删除选中</string>
     <string name="project_export_to_gallery">导出到系统相册</string>
+    <string name="detail_title">项目详情</string>
+    <string name="detail_no_images">暂无图片</string>
+    <string name="detail_select_all">全选</string>
+    <string name="detail_deselect_all">取消全选</string>
+    <string name="detail_sort_asc">顺序</string>
+    <string name="detail_sort_desc">逆序</string>
+    <string name="detail_export_selected">导出选中图片</string>
+    <string name="detail_exporting">正在导出…</string>
+    <string name="detail_exporting_hint">图片较多时可能需要一点时间，请勿退出应用</string>
+    <string name="detail_export_done">已导出到系统相册的 Pictures/HyperSS 目录。</string>
+    <string name="detail_batch_export_title">导出 %1$d 张图片</string>
+    <string name="detail_batch_desc_images">图片将导出到系统相册 Pictures/HyperSS</string>
+    <string name="detail_batch_desc_pdf">PDF 每页排列 %1$d 张，导出到 Download/HyperSSDL</string>
+    <string name="detail_export_images_btn">图片导出</string>
+    <string name="detail_export_pdf_btn">PDF 导出</string>
+    <string name="detail_pdf_collapse">收起 PDF 选项</string>
+    <string name="detail_per_page_label">每页图片数（按比例缩放排列）</string>
+    <string name="detail_per_page">%1$d 张/页</string>
+    <string name="detail_pdf_name_label">PDF 文件名</string>
+    <string name="detail_preview_btn">预览布局</string>
+    <string name="detail_preview_generating">生成预览…</string>
+    <string name="detail_pdf_pages">共 %1$d 页（A4 纵向）</string>
+    <string name="detail_page_preview">第 %1$d 页预览</string>
+    <string name="detail_filename_unchanged">文件名保持 %1$s 不变</string>
+    <string name="detail_export_failed">导出失败</string>
+    <string name="viewer_prev">上一张</string>
+    <string name="viewer_next">下一张</string>
+    <string name="detail_edit_selected">编辑选中图片</string>
+
+    <!-- 批量图片编辑器 -->
+    <string name="batch_editor_title">批量编辑</string>
+    <string name="batch_editor_scope">已选 %1$d 张</string>
+    <string name="batch_editor_watermark_scope">水印将写入全部选中图片，左右滑动可逐张实时预览</string>
+    <string name="batch_editor_mosaic_scope">马赛克仅作用于当前图片，左右滑动到其它图片可再在不同位置涂抹</string>
+    <string name="batch_editor_rename_hint">此处重命名的是「项目名称」，不是图片名称：项目内所有图片共用同一项目名，且不影响图片文件名</string>
+    <string name="batch_editor_save_confirm_title">保存批量编辑</string>
+    <string name="batch_editor_save_confirm_message">将把编辑写入 %1$d 张选中图片，覆盖原图且无法恢复。</string>
+    <string name="batch_editor_saving">正在保存…</string>
+    <string name="batch_editor_saving_hint">正在处理 %1$d 张图片，请勿退出应用</string>
+    <string name="batch_editor_saved">批量编辑已保存</string>
+
+    <!-- 图片编辑器 -->
+    <string name="editor_title">编辑图片</string>
+    <string name="editor_tool_watermark">水印</string>
+    <string name="editor_tool_mosaic">马赛克</string>
+    <string name="editor_watermark_label">水印文字</string>
+    <string name="editor_watermark_hint">最多 14 个字符</string>
+    <string name="editor_watermark_default">仅供xx办理使用</string>
+    <string name="editor_watermark_switch">启用水印</string>
+    <string name="editor_mosaic_brush">马赛克大小</string>
+    <string name="editor_mosaic_hint">点按或拖动图片涂抹马赛克，可撤销上一笔</string>
+    <string name="editor_mosaic_undo">撤销</string>
+    <string name="editor_mosaic_clear">清空</string>
+    <string name="editor_save_confirm_title">保存编辑</string>
+    <string name="editor_save_confirm_message">保存后将覆盖原图片，且无法恢复。</string>
+    <string name="editor_saved">已保存</string>
+    <string name="editor_save_failed">保存失败</string>
 
     <!-- 项目设置 -->
     <string name="project_settings_basic">基本信息</string>
@@ -125,11 +200,34 @@
     <string name="capture_mode_manual">② 手动滚动</string>
     <string name="capture_mode_fixed">③ 自定义步长</string>
     <string name="capture_mode_calibrated">④ 图标滑动</string>
+    <string name="capture_mode_auto_desc">系统自动滑动，重叠检测拼接，到底自动完成</string>
+    <string name="capture_mode_manual_desc">你手动滑动，每帧独立保存</string>
+    <string name="capture_mode_fixed_desc">按固定步长滚动拼接（步长 ≥ 一屏有风险）</string>
+    <string name="capture_mode_calibrated_desc">用标定距离代替步长</string>
     <string name="capture_step_hint">步长（dp）</string>
-    <string name="capture_step_warning">步长 ≥ 一屏高度可能导致拼接失败，请谨慎设置</string>
+    <string name="capture_step_warning">注意：步长 ≥ 一屏高度可能导致拼接失败</string>
     <string name="capture_start">启动悬浮工具条</string>
     <string name="capture_permission_hint">需要「无障碍服务」与「悬浮窗」权限才能自动滚动截屏。</string>
     <string name="capture_progress">已完成 %1$d 帧 · 高度 %2$dpx</string>
+    <string name="capture_screenrecord_failed">未授予屏幕录制权限，无法截屏</string>
+    <string name="capture_select_project">选择目标项目</string>
+    <string name="capture_accessibility_msg">请开启「HyperSS 截图助手」无障碍服务，以支持自动滚动与截屏。</string>
+    <string name="capture_overlay_msg">请允许 HyperSS 显示悬浮窗，悬浮工具条依赖该权限。</string>
+    <string name="capture_start_failed_title">无法启动</string>
+    <string name="capture_create_project_first">（请先创建项目）</string>
+    <string name="capture_new_prefix">新前缀</string>
+    <string name="capture_new_project_name">新项目名</string>
+    <string name="capture_new_btn">新建</string>
+    <string name="capture_default_project_name">新项目</string>
+    <string name="capture_status_idle">空闲</string>
+    <string name="capture_status_idle_hint">点击上方按钮开始长截图</string>
+    <string name="capture_status_preparing">准备中…</string>
+    <string name="capture_status_preparing_hint">正在创建会话</string>
+    <string name="capture_status_active">进行中</string>
+    <string name="capture_status_active_detail">已完成 %1$d 帧 · 高度 %2$dpx · 置信度 %3$s</string>
+    <string name="capture_status_finished">已完成</string>
+    <string name="capture_status_discarded">（已丢弃）</string>
+    <string name="capture_status_failed">失败</string>
 
     <!-- 悬浮工具条 -->
     <string name="toolbar_start">开始</string>
@@ -139,6 +237,30 @@
     <string name="toolbar_cancel">取消</string>
     <string name="toolbar_screenshot">截图</string>
     <string name="toolbar_paused_appearance">已暂停</string>
+    <string name="float_expand">展开工具条</string>
+    <string name="float_collapse">折叠</string>
+    <string name="float_exit">退出</string>
+    <string name="float_max_icons">最多 9 个图标</string>
+    <string name="float_add_icon">点＋添加图标</string>
+    <string name="float_add_one_more">再添加一个图标</string>
+    <string name="float_drag_icons">拖动图标调整方向</string>
+    <string name="float_status_ready">就绪</string>
+    <string name="float_status_preparing">准备中</string>
+    <string name="float_status_stitching">拼接中</string>
+    <string name="float_status_stitching_count">拼接中 %1$d/%2$d</string>
+    <string name="float_status_paused">暂停</string>
+    <string name="float_status_finished">完成</string>
+    <string name="float_status_failed">失败</string>
+    <string name="float_limit_reached">已达 %1$d 张，收尾保存</string>
+    <string name="float_jump_skipped">画面跳变已跳过·请继续滑动</string>
+    <string name="float_wait_idle">长时间未滑动，已自动保存</string>
+    <string name="float_wait_scroll">已拼 %1$d/%2$d·请滑动（%3$ds后自动保存）</string>
+    <string name="float_wait_capture">已拼 %1$d/%2$d·%3$ds后截图</string>
+    <string name="float_paused_user">用户暂停</string>
+    <string name="float_pause_reason_jump">画面跳变，等待手动处理</string>
+    <string name="float_interrupt_screen_off">屏幕熄灭</string>
+    <string name="float_interrupt_app_left">离开了目标应用</string>
+    <string name="float_interrupt_a11y">无障碍服务被中断</string>
 
     <!-- 通知 -->
     <string name="notification_channel_foreground">HyperSS 截图服务</string>
@@ -146,4 +268,34 @@
     <string name="notification_foreground_text">请勿切换应用，正在自动滚动截屏…</string>
     <string name="notification_interrupted_title">截图已中断</string>
     <string name="notification_interrupted_text">已保留当前进度，可在应用中继续。</string>
+
+    <!-- PDF 阅读器 -->
+    <string name="pdf_reader_title">PDF 阅读器</string>
+    <string name="pdf_import">导入</string>
+    <string name="pdf_refresh">刷新</string>
+    <string name="pdf_imported">已导入到 Download/HyperSSDL</string>
+    <string name="pdf_import_failed">导入失败（不是有效的 PDF）</string>
+    <string name="pdf_loading">加载中…</string>
+    <string name="pdf_empty">暂无 PDF\n在项目里批量导出后会出现在这里</string>
+    <string name="pdf_save_copy">另存副本</string>
+    <string name="pdf_rename_title">重命名 PDF</string>
+    <string name="pdf_file_name">文件名</string>
+    <string name="pdf_renamed">已重命名</string>
+    <string name="pdf_rename_failed">重命名失败</string>
+    <string name="pdf_copy_suffix">_副本</string>
+    <string name="pdf_save_copy_title">另存 PDF 副本</string>
+    <string name="pdf_new_file_name">新文件名</string>
+    <string name="pdf_saved">已保存到 Download/HyperSSDL</string>
+    <string name="pdf_save_failed">保存失败</string>
+    <string name="pdf_importing">正在导入 PDF…</string>
+    <string name="pdf_opening">打开中…</string>
+    <string name="pdf_cannot_open">无法打开该 PDF</string>
+    <string name="pdf_page_indicator">%1$s（%2$d/%3$d）</string>
+    <string name="pdf_default_name">未命名.pdf</string>
+
+    <!-- 项目设置补充 -->
+    <string name="project_settings_max_frames_title">截图张数上限（最高优先级）</string>
+    <string name="project_settings_max_frames_hint">达到该张数后立即收尾保存（默认 10，范围 3~20），优先于循环次数</string>
+    <string name="unit_images">张</string>
+    <string name="unit_dp">dp</string>
 </resources>

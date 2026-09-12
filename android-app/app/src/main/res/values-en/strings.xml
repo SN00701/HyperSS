@@ -1,6 +1,6 @@
-﻿<resources>
+<resources>
     <string name="app_name">HyperSS</string>
-    <string name="app_slogan">Smart long screenshot 路 Project-based 路 Local-first</string>
+    <string name="app_slogan">Smart long screenshot · Project-based · Local-first</string>
 
     <string name="accessibility_service_label">HyperSS Capture Assistant</string>
     <string name="accessibility_service_description">Used to simulate scroll gestures during auto-scroll long screenshots, and capture screen frames via the system on Android 11+. This service does not silently collect any unrelated information.</string>
@@ -8,8 +8,25 @@
     <string name="back">Back</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="close">Close</string>
+    <string name="select">Select</string>
+    <string name="rename">Rename</string>
+    <string name="edit">Edit</string>
+    <string name="export">Export</string>
     <string name="error_title">Error</string>
+    <string name="error_unknown">Unknown error</string>
     <string name="hint">Notice</string>
+
+    <string name="error_invalid_prefix">Invalid prefix: %1$s</string>
+    <string name="error_prefix_exists">Prefix already exists: %1$s</string>
+    <string name="error_project_not_found">Project not found</string>
+    <string name="error_image_not_found">Image not found</string>
+    <string name="error_session_not_found">Session not found</string>
+    <string name="error_stitch_low_confidence">Screen changed too much; stitch failed (low confidence)</string>
+    <string name="error_width_mismatch">Screenshot width mismatch; cannot stitch</string>
+    <string name="error_sequence_exhausted">Sequence exhausted</string>
+    <string name="error_no_draft">No recoverable draft</string>
 
     <string name="home_title">HyperSS</string>
     <string name="home_new_project">New project</string>
@@ -40,9 +57,64 @@
     <string name="project_alias_hint">Display alias (file name unchanged)</string>
     <string name="project_delete_selected">Delete selected</string>
     <string name="project_export_to_gallery">Export to gallery</string>
+    <string name="detail_title">Project details</string>
+    <string name="detail_no_images">No images yet</string>
+    <string name="detail_select_all">Select all</string>
+    <string name="detail_deselect_all">Deselect all</string>
+    <string name="detail_sort_asc">Normal</string>
+    <string name="detail_sort_desc">Reverse</string>
+    <string name="detail_export_selected">Export selected images</string>
+    <string name="detail_exporting">Exporting…</string>
+    <string name="detail_exporting_hint">This may take a moment for many images. Please keep the app open.</string>
+    <string name="detail_export_done">Exported to the Pictures/HyperSS folder in your gallery.</string>
+    <string name="detail_batch_export_title">Export %1$d images</string>
+    <string name="detail_batch_desc_images">Images will be exported to Pictures/HyperSS in your gallery</string>
+    <string name="detail_batch_desc_pdf">PDF with %1$d image(s) per page, exported to Download/HyperSSDL</string>
+    <string name="detail_export_images_btn">Export images</string>
+    <string name="detail_export_pdf_btn">Export PDF</string>
+    <string name="detail_pdf_collapse">Hide PDF options</string>
+    <string name="detail_per_page_label">Images per page (scaled to fit)</string>
+    <string name="detail_per_page">%1$d per page</string>
+    <string name="detail_pdf_name_label">PDF file name</string>
+    <string name="detail_preview_btn">Preview layout</string>
+    <string name="detail_preview_generating">Generating preview…</string>
+    <string name="detail_pdf_pages">%1$d pages (A4 portrait)</string>
+    <string name="detail_page_preview">Page %1$d preview</string>
+    <string name="detail_filename_unchanged">File name stays %1$s</string>
+    <string name="detail_export_failed">Export failed</string>
+    <string name="viewer_prev">Previous</string>
+    <string name="viewer_next">Next</string>
+    <string name="detail_edit_selected">Edit selected images</string>
+
+    <string name="batch_editor_title">Batch edit</string>
+    <string name="batch_editor_scope">%1$d image(s) selected</string>
+    <string name="batch_editor_watermark_scope">The watermark is written to all selected images; swipe between images to preview</string>
+    <string name="batch_editor_mosaic_scope">Mosaic applies to the current image only; swipe to another image to apply it elsewhere</string>
+    <string name="batch_editor_rename_hint">This renames the project, not the image. All images in the project share the project name; image file names are not affected.</string>
+    <string name="batch_editor_save_confirm_title">Save batch edits</string>
+    <string name="batch_editor_save_confirm_message">Edits will be written to the %1$d selected image(s), overwriting the originals and cannot be undone.</string>
+    <string name="batch_editor_saving">Saving…</string>
+    <string name="batch_editor_saving_hint">Processing %1$d image(s). Please keep the app open.</string>
+    <string name="batch_editor_saved">Batch edits saved</string>
+
+    <string name="editor_title">Edit image</string>
+    <string name="editor_tool_watermark">Watermark</string>
+    <string name="editor_tool_mosaic">Mosaic</string>
+    <string name="editor_watermark_label">Watermark text</string>
+    <string name="editor_watermark_hint">Up to 14 characters</string>
+    <string name="editor_watermark_default">仅供xx办理使用</string>
+    <string name="editor_watermark_switch">Enable watermark</string>
+    <string name="editor_mosaic_brush">Mosaic brush size</string>
+    <string name="editor_mosaic_hint">Tap or drag on the image to apply mosaic; undo removes the last stroke</string>
+    <string name="editor_mosaic_undo">Undo</string>
+    <string name="editor_mosaic_clear">Clear</string>
+    <string name="editor_save_confirm_title">Save edits</string>
+    <string name="editor_save_confirm_message">Saving overwrites the original image and cannot be undone.</string>
+    <string name="editor_saved">Saved</string>
+    <string name="editor_save_failed">Save failed</string>
 
     <string name="project_settings_basic">Basics</string>
-    <string name="project_settings_prefix_hint">Prefix %1$s 路 %2$d images (rename does not change file prefix)</string>
+    <string name="project_settings_prefix_hint">Prefix %1$s · %2$d images (rename does not change file prefix)</string>
     <string name="project_settings_mode">Capture mode</string>
     <string name="mode_auto">Long screenshot</string>
     <string name="mode_auto_desc">Auto-detect the scroll end for streaming pages</string>
@@ -58,6 +130,9 @@
     <string name="project_settings_loop_count_value">Loop count (0 = infinite)</string>
     <string name="project_settings_loop_count_hint">0 loops forever until the actual scroll step differs from the icons (e.g. page bottom) and stops automatically</string>
     <string name="save_settings">Save settings</string>
+    <string name="save_settings_confirm_title">Save settings</string>
+    <string name="save_settings_confirm_message">Save the current settings?</string>
+    <string name="confirm">OK</string>
     <string name="saving">Saving</string>
     <string name="project_name_empty">Project name cannot be empty</string>
 
@@ -75,7 +150,7 @@
     <string name="settings_appearance">Appearance</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_system">Follow system</string>
-    <string name="settings_language_zh">涓枃</string>
+    <string name="settings_language_zh">中文</string>
     <string name="settings_language_en">English</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_theme_light">Light</string>
@@ -114,11 +189,34 @@
     <string name="capture_mode_manual">Manual scroll</string>
     <string name="capture_mode_fixed">Custom step</string>
     <string name="capture_mode_calibrated">Icon swipes</string>
+    <string name="capture_mode_auto_desc">Auto-scrolls and stitches with overlap detection; finishes automatically at the bottom</string>
+    <string name="capture_mode_manual_desc">You scroll manually; each frame is saved separately</string>
+    <string name="capture_mode_fixed_desc">Scrolls and stitches by a fixed step (step >= one screen is risky)</string>
+    <string name="capture_mode_calibrated_desc">Uses a calibrated distance instead of a step</string>
     <string name="capture_step_hint">Step (dp)</string>
-    <string name="capture_step_warning">A step >= one screen height may break stitching.</string>
+    <string name="capture_step_warning">Note: a step >= one screen height may break stitching</string>
     <string name="capture_start">Start floating toolbar</string>
-    <string name="capture_permission_hint">Accessibility and overlay permissions are required.</string>
-    <string name="capture_progress">%1$d frames 路 %2$dpx tall</string>
+    <string name="capture_permission_hint">Accessibility and overlay permissions are required to scroll and capture automatically.</string>
+    <string name="capture_progress">%1$d frames · %2$dpx tall</string>
+    <string name="capture_screenrecord_failed">Screen recording permission was not granted; cannot capture</string>
+    <string name="capture_select_project">Select target project</string>
+    <string name="capture_accessibility_msg">Enable the "HyperSS Capture Assistant" accessibility service to allow auto-scrolling and screen capture.</string>
+    <string name="capture_overlay_msg">Allow HyperSS to show floating windows; the capture toolbar depends on this permission.</string>
+    <string name="capture_start_failed_title">Cannot start</string>
+    <string name="capture_create_project_first">(Create a project first)</string>
+    <string name="capture_new_prefix">New prefix</string>
+    <string name="capture_new_project_name">New project name</string>
+    <string name="capture_new_btn">New</string>
+    <string name="capture_default_project_name">New project</string>
+    <string name="capture_status_idle">Idle</string>
+    <string name="capture_status_idle_hint">Tap the button above to start a long screenshot</string>
+    <string name="capture_status_preparing">Preparing…</string>
+    <string name="capture_status_preparing_hint">Creating session</string>
+    <string name="capture_status_active">In progress</string>
+    <string name="capture_status_active_detail">%1$d frames · %2$dpx tall · confidence %3$s</string>
+    <string name="capture_status_finished">Finished</string>
+    <string name="capture_status_discarded">(discarded)</string>
+    <string name="capture_status_failed">Failed</string>
 
     <string name="toolbar_start">Start</string>
     <string name="toolbar_pause">Pause</string>
@@ -127,10 +225,62 @@
     <string name="toolbar_cancel">Cancel</string>
     <string name="toolbar_screenshot">Capture</string>
     <string name="toolbar_paused_appearance">Paused</string>
+    <string name="float_expand">Expand toolbar</string>
+    <string name="float_collapse">Collapse</string>
+    <string name="float_exit">Exit</string>
+    <string name="float_max_icons">Up to 9 icons</string>
+    <string name="float_add_icon">Tap + to add an icon</string>
+    <string name="float_add_one_more">Add one more icon</string>
+    <string name="float_drag_icons">Drag icons to adjust direction</string>
+    <string name="float_status_ready">Ready</string>
+    <string name="float_status_preparing">Preparing</string>
+    <string name="float_status_stitching">Stitching</string>
+    <string name="float_status_stitching_count">Stitching %1$d/%2$d</string>
+    <string name="float_status_paused">Paused</string>
+    <string name="float_status_finished">Done</string>
+    <string name="float_status_failed">Failed</string>
+    <string name="float_limit_reached">Reached %1$d images, saving</string>
+    <string name="float_jump_skipped">Screen jump skipped - keep scrolling</string>
+    <string name="float_wait_idle">No scrolling for a long time, auto-saved</string>
+    <string name="float_wait_scroll">Stitched %1$d/%2$d - scroll (auto-save in %3$ds)</string>
+    <string name="float_wait_capture">Stitched %1$d/%2$d - capture in %3$ds</string>
+    <string name="float_paused_user">Paused by user</string>
+    <string name="float_pause_reason_jump">Screen jumped, waiting for manual input</string>
+    <string name="float_interrupt_screen_off">Screen turned off</string>
+    <string name="float_interrupt_app_left">Left the target app</string>
+    <string name="float_interrupt_a11y">Accessibility service was interrupted</string>
 
     <string name="notification_channel_foreground">HyperSS capture service</string>
     <string name="notification_foreground_title">Capturing long screenshot</string>
     <string name="notification_foreground_text">Keep the target app in foreground</string>
     <string name="notification_interrupted_title">Capture interrupted</string>
     <string name="notification_interrupted_text">Progress was kept; you can resume in the app.</string>
+
+    <string name="pdf_reader_title">PDF reader</string>
+    <string name="pdf_import">Import</string>
+    <string name="pdf_refresh">Refresh</string>
+    <string name="pdf_imported">Imported to Download/HyperSSDL</string>
+    <string name="pdf_import_failed">Import failed (not a valid PDF)</string>
+    <string name="pdf_loading">Loading…</string>
+    <string name="pdf_empty">No PDFs yet\nThey will appear here after a batch export from a project</string>
+    <string name="pdf_save_copy">Save a copy</string>
+    <string name="pdf_rename_title">Rename PDF</string>
+    <string name="pdf_file_name">File name</string>
+    <string name="pdf_renamed">Renamed</string>
+    <string name="pdf_rename_failed">Rename failed</string>
+    <string name="pdf_copy_suffix">_copy</string>
+    <string name="pdf_save_copy_title">Save PDF copy</string>
+    <string name="pdf_new_file_name">New file name</string>
+    <string name="pdf_saved">Saved to Download/HyperSSDL</string>
+    <string name="pdf_save_failed">Save failed</string>
+    <string name="pdf_importing">Importing PDF…</string>
+    <string name="pdf_opening">Opening…</string>
+    <string name="pdf_cannot_open">Cannot open this PDF</string>
+    <string name="pdf_page_indicator">%1$s (%2$d/%3$d)</string>
+    <string name="pdf_default_name">unnamed.pdf</string>
+
+    <string name="project_settings_max_frames_title">Capture limit (highest priority)</string>
+    <string name="project_settings_max_frames_hint">Stops and saves immediately at this limit (default 10, range 3–20); takes priority over loop count</string>
+    <string name="unit_images">images</string>
+    <string name="unit_dp">dp</string>
 </resources>

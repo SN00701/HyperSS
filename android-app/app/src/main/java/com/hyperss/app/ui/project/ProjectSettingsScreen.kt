@@ -12,12 +12,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
-import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
@@ -29,7 +29,6 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,13 +45,17 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hyperss.app.R
-import com.hyperss.app.ui.BlurTopBar
-import com.hyperss.app.ui.ambientGlassBackground
+import com.hyperss.app.ui.AmbientGlassLayer
+import com.hyperss.app.ui.GlassButton
+import com.hyperss.app.ui.GlassChipButton
+import com.hyperss.app.ui.GlassDialog
 import com.hyperss.app.ui.GlassSurface
+import com.hyperss.app.ui.LiquidTopBar
+import com.hyperss.app.ui.liquidGlassLayer
+import com.hyperss.app.ui.rememberLiquidBackdrop
+import com.hyperss.app.ui.rememberLiquidContentBackdrop
 import com.hyperss.app.ui.rememberTopBarBlurFraction
 import com.hyperss.app.ui.theme.LightTextSecondary
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 
 @Composable
 fun ProjectSettingsScreen(
@@ -65,13 +68,16 @@ fun ProjectSettingsScreen(
 
     LaunchedEffect(projectId) { viewModel.load(projectId) }
 
-    // 顶部动态模糊：内容滚动时毛玻璃标题栏渐入
-    val backdrop = rememberLayerBackdrop()
+    // 顶部液态玻璃：内容滚动时玻璃标题栏渐入
+    val liquidAmbient = rememberLiquidBackdrop()
+    val liquidContent = rememberLiquidContentBackdrop()
     val listState = rememberLazyListState()
     val blurFraction = rememberTopBarBlurFraction(listState)
     var barHeight by remember { mutableStateOf(0.dp) }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // 环境光斑玻璃层：设置卡片液态玻璃采样它
+        AmbientGlassLayer(liquidAmbient)
         when {
             state.loading -> {
                 Column(
@@ -99,7 +105,7 @@ fun ProjectSettingsScreen(
                     state = listState,
                     modifier = Modifier
                         .fillMaxSize()
-                        .layerBackdrop(backdrop).ambientGlassBackground(),
+                        .liquidGlassLayer(liquidContent),
                     contentPadding = PaddingValues(
                         top = barHeight + 20.dp,
                         start = 20.dp,
@@ -111,7 +117,7 @@ fun ProjectSettingsScreen(
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
                         SectionTitle(stringResource(R.string.project_settings_basic))
-                        GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+                        GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp, liquidBackdrop = liquidAmbient) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -138,7 +144,7 @@ fun ProjectSettingsScreen(
 
                     item {
                         SectionTitle(stringResource(R.string.project_settings_mode))
-                        GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+                        GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp, liquidBackdrop = liquidAmbient) {
                             Column(Modifier.selectableGroup()) {
                                 ModeOption(
                                     "AUTO_SCROLL",
@@ -175,7 +181,7 @@ fun ProjectSettingsScreen(
                     if (state.mode == "FIXED_STEP") {
                         item {
                             SectionTitle(stringResource(R.string.project_settings_step))
-                            GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+                            GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp, liquidBackdrop = liquidAmbient) {
                                 Column(
                                     modifier = Modifier.padding(16.dp),
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -190,7 +196,7 @@ fun ProjectSettingsScreen(
                                             modifier = Modifier.weight(1f),
                                         )
                                         Text(
-                                            "dp",
+                                            stringResource(R.string.unit_dp),
                                             style = MiuixTheme.textStyles.body2,
                                             color = LightTextSecondary,
                                         )
@@ -214,8 +220,8 @@ fun ProjectSettingsScreen(
                     // 截图张数上限：长截图与手动滚动共用，优先级高于循环次数
                     if (state.mode == "AUTO_SCROLL" || state.mode == "MANUAL") {
                         item {
-                            SectionTitle("截图张数上限（最高优先级）")
-                            GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+                            SectionTitle(stringResource(R.string.project_settings_max_frames_title))
+                            GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp, liquidBackdrop = liquidAmbient) {
                                 Column(
                                     modifier = Modifier.padding(16.dp),
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -230,7 +236,7 @@ fun ProjectSettingsScreen(
                                             modifier = Modifier.weight(1f),
                                         )
                                         Text(
-                                            "张",
+                                            stringResource(R.string.unit_images),
                                             style = MiuixTheme.textStyles.body2,
                                             color = LightTextSecondary,
                                         )
@@ -245,7 +251,7 @@ fun ProjectSettingsScreen(
                                         },
                                     )
                                     Text(
-                                        "达到该张数后立即收尾保存（默认 10，范围 3~20），优先于循环次数",
+                                        stringResource(R.string.project_settings_max_frames_hint),
                                         style = MiuixTheme.textStyles.footnote2,
                                         color = LightTextSecondary,
                                     )
@@ -257,7 +263,7 @@ fun ProjectSettingsScreen(
                     if (state.mode != "MANUAL") {
                         item {
                             SectionTitle(stringResource(R.string.project_settings_loop_count))
-                            GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+                            GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp, liquidBackdrop = liquidAmbient) {
                                 Column(
                                     modifier = Modifier.padding(16.dp),
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -289,19 +295,25 @@ fun ProjectSettingsScreen(
 
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
-                        Button(
+                        GlassButton(
                             onClick = { showSaveConfirm = true },
                             enabled = !state.saving && state.name.trim().isNotEmpty(),
                             modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColorsPrimary(),
+                            liquidBackdrop = liquidAmbient,
+                            // CTA 玻璃垫色偏实，保证白色文案在深浅主题下都可读
+                            background = MiuixTheme.colorScheme.primary.copy(alpha = 0.78f),
                         ) {
                             if (state.saving) {
                                 CircularProgressIndicator(size = 20.dp, strokeWidth = 2.dp)
                                 Spacer(modifier = Modifier.size(8.dp))
-                                Text(stringResource(R.string.saving))
-                            } else {
-                                Text(stringResource(R.string.save_settings))
                             }
+                            Text(
+                                stringResource(
+                                    if (state.saving) R.string.saving else R.string.save_settings,
+                                ),
+                                color = MiuixTheme.colorScheme.onPrimary,
+                                style = MiuixTheme.textStyles.button,
+                            )
                         }
                     }
                 }
@@ -309,8 +321,8 @@ fun ProjectSettingsScreen(
         }
 
         // 顶部栏最后声明：绘制与触摸均优先于列表
-        BlurTopBar(
-            backdrop = backdrop,
+        LiquidTopBar(
+            backdrop = liquidContent,
             fraction = blurFraction,
             modifier = Modifier.align(Alignment.TopCenter),
             onHeightChanged = { barHeight = it },
@@ -320,9 +332,21 @@ fun ProjectSettingsScreen(
                     .fillMaxWidth()
                     .padding(top = 48.dp, start = 4.dp, end = 8.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
+                // 返回玻璃圆钮：折射透出滚动内容
+                GlassChipButton(
+                    onClick = onBack,
+                    modifier = Modifier.size(40.dp),
+                    liquidBackdrop = liquidContent,
+                    redrawKey = listState.firstVisibleItemIndex * 1_000_000 + listState.firstVisibleItemScrollOffset,
+                    shape = CircleShape,
+                ) {
+                    Icon(
+                        MiuixIcons.Back,
+                        contentDescription = stringResource(R.string.back),
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
                 Text(stringResource(R.string.project_settings), style = MiuixTheme.textStyles.title1)
             }
@@ -331,7 +355,7 @@ fun ProjectSettingsScreen(
 
     state.error?.let { msg ->
         if (state.project != null && !state.loading && state.saving.not()) {
-            OverlayDialog(
+            GlassDialog(
                 show = true,
                 title = stringResource(R.string.hint),
                 summary = msg,
@@ -351,7 +375,7 @@ fun ProjectSettingsScreen(
     }
 
     if (showSaveConfirm) {
-        OverlayDialog(
+        GlassDialog(
             show = true,
             title = stringResource(R.string.save_settings_confirm_title),
             summary = stringResource(R.string.save_settings_confirm_message),

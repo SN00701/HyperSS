@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,18 +47,25 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.graphicsLayer
-import com.hyperss.app.ui.BlurTopBar
-import com.hyperss.app.ui.ambientGlassBackground
+import com.hyperss.app.R
+import com.hyperss.app.ui.AmbientGlassLayer
+import com.hyperss.app.ui.GlassChipButton
+import com.hyperss.app.ui.GlassDialog
 import com.hyperss.app.ui.GlassSurface
+import com.hyperss.app.ui.LiquidTopBar
+import com.hyperss.app.ui.liquidGlassLayer
+import com.hyperss.app.ui.rememberBlackCanvasBackdrop
+import com.hyperss.app.ui.rememberLiquidBackdrop
+import com.hyperss.app.ui.rememberLiquidContentBackdrop
 import com.hyperss.app.ui.rememberTopBarBlurFraction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -66,10 +74,7 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Rename
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -110,7 +115,7 @@ fun PdfReaderScreen(onBack: () -> Unit) {
                     com.hyperss.app.util.PdfUtils.importPdf(context, uri)
                 }
                 importing = false
-                message = if (ok) "已导入到 Download/HyperSSDL" else "导入失败（不是有效的 PDF）"
+                message = if (ok) context.getString(R.string.pdf_imported) else context.getString(R.string.pdf_import_failed)
                 refresh()
             }
         }
@@ -118,20 +123,23 @@ fun PdfReaderScreen(onBack: () -> Unit) {
 
     LaunchedEffect(Unit) { refresh() }
 
-    // 顶部动态模糊：内容滚动时毛玻璃标题栏渐入
-    val backdrop = rememberLayerBackdrop()
+    // 顶部液态玻璃：内容滚动时玻璃标题栏渐入
+    val liquidAmbient = rememberLiquidBackdrop()
+    val liquidContent = rememberLiquidContentBackdrop()
     val listState = rememberLazyListState()
     val blurFraction = rememberTopBarBlurFraction(listState)
     var barHeight by remember { mutableStateOf(0.dp) }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // 环境光斑玻璃层：PDF 列表卡片液态玻璃采样它
+        AmbientGlassLayer(liquidAmbient)
         when {
             loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("加载中…", style = MiuixTheme.textStyles.body1)
+                Text(stringResource(R.string.pdf_loading), style = MiuixTheme.textStyles.body1)
             }
             pdfList.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    "暂无 PDF\n在项目里批量导出后会出现在这里",
+                    stringResource(R.string.pdf_empty),
                     style = MiuixTheme.textStyles.body1,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
@@ -140,7 +148,7 @@ fun PdfReaderScreen(onBack: () -> Unit) {
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .layerBackdrop(backdrop).ambientGlassBackground(),
+                    .liquidGlassLayer(liquidContent),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
                     top = barHeight + 16.dp,
                     start = 16.dp,
@@ -156,6 +164,7 @@ fun PdfReaderScreen(onBack: () -> Unit) {
                             .clip(RoundedCornerShape(14.dp))
                             .combinedClickable(onClick = { opening = item }),
                         cornerRadius = 14.dp,
+                        liquidBackdrop = liquidAmbient,
                     ) {
                         Row(
                             modifier = Modifier
@@ -174,19 +183,20 @@ fun PdfReaderScreen(onBack: () -> Unit) {
                                 )
                             }
                             IconButton(onClick = { renameTarget = item }) {
-                                Icon(MiuixIcons.Rename, contentDescription = "重命名")
+                                Icon(MiuixIcons.Rename, contentDescription = stringResource(R.string.rename))
                             }
                             IconButton(onClick = { saveTarget = item }) {
-                                Icon(MiuixIcons.Copy, contentDescription = "另存副本")
+                                Icon(MiuixIcons.Copy, contentDescription = stringResource(R.string.pdf_save_copy))
                             }
                         }
                     }
                 }
             }
         }
-        BlurTopBar(
-            backdrop = backdrop,
+        LiquidTopBar(
+            backdrop = liquidContent,
             fraction = blurFraction,
+            refreshKey = listState.firstVisibleItemIndex * 1_000_000 + listState.firstVisibleItemScrollOffset,
             modifier = Modifier.align(Alignment.TopCenter),
             onHeightChanged = { barHeight = it },
         ) {
@@ -195,13 +205,47 @@ fun PdfReaderScreen(onBack: () -> Unit) {
                     .fillMaxWidth()
                     .padding(top = 48.dp, start = 4.dp, end = 8.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(MiuixIcons.Back, contentDescription = "返回")
+                // 返回玻璃圆钮：折射透出列表内容
+                GlassChipButton(
+                    onClick = onBack,
+                    modifier = Modifier.size(40.dp),
+                    liquidBackdrop = liquidContent,
+                    redrawKey = listState.firstVisibleItemIndex * 1_000_000 + listState.firstVisibleItemScrollOffset,
+                    shape = CircleShape,
+                ) {
+                    Icon(
+                        MiuixIcons.Back,
+                        contentDescription = stringResource(R.string.back),
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
-                Text("PDF 阅读器", style = MiuixTheme.textStyles.title1, modifier = Modifier.weight(1f))
-                TextButton(text = "导入", onClick = { importLauncher.launch(arrayOf("application/pdf")) })
-                TextButton(text = "刷新", onClick = { refresh() })
+                Text(
+                    stringResource(R.string.pdf_reader_title),
+                    style = MiuixTheme.textStyles.title1,
+                    modifier = Modifier.weight(1f),
+                )
+                GlassChipButton(
+                    onClick = { importLauncher.launch(arrayOf("application/pdf")) },
+                    liquidBackdrop = liquidContent,
+                    redrawKey = listState.firstVisibleItemIndex * 1_000_000 + listState.firstVisibleItemScrollOffset,
+                ) {
+                    Text(
+                        stringResource(R.string.pdf_import),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    )
+                }
+                GlassChipButton(
+                    onClick = { refresh() },
+                    liquidBackdrop = liquidContent,
+                    redrawKey = listState.firstVisibleItemIndex * 1_000_000 + listState.firstVisibleItemScrollOffset,
+                ) {
+                    Text(
+                        stringResource(R.string.pdf_refresh),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    )
+                }
             }
         }
     }
@@ -219,23 +263,23 @@ fun PdfReaderScreen(onBack: () -> Unit) {
         var newName by remember(item.uri) {
             mutableStateOf(item.name.removeSuffix(".pdf"))
         }
-        OverlayDialog(
+        GlassDialog(
             show = true,
-            title = "重命名 PDF",
+            title = stringResource(R.string.pdf_rename_title),
             onDismissRequest = { renameTarget = null },
         ) {
             Column {
-                TextField(value = newName, onValueChange = { newName = it }, label = "文件名", singleLine = true)
+                TextField(value = newName, onValueChange = { newName = it }, label = stringResource(R.string.pdf_file_name), singleLine = true)
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(text = "取消", onClick = { renameTarget = null })
+                    TextButton(text = stringResource(R.string.cancel), onClick = { renameTarget = null })
                     Spacer(modifier = Modifier.size(12.dp))
                     TextButton(
-                        text = "保存",
+                        text = stringResource(R.string.save),
                         colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.textButtonColorsPrimary(),
                         onClick = {
                             val ok = com.hyperss.app.util.PdfUtils.renamePdf(context, item, newName)
-                            message = if (ok) "已重命名" else "重命名失败"
+                            message = if (ok) context.getString(R.string.pdf_renamed) else context.getString(R.string.pdf_rename_failed)
                             renameTarget = null
                             refresh()
                         },
@@ -248,28 +292,28 @@ fun PdfReaderScreen(onBack: () -> Unit) {
     // 另存副本
     saveTarget?.let { item ->
         var newName by remember(item.uri) {
-            mutableStateOf(item.name.removeSuffix(".pdf") + "_副本")
+            mutableStateOf(item.name.removeSuffix(".pdf") + context.getString(R.string.pdf_copy_suffix))
         }
-        OverlayDialog(
+        GlassDialog(
             show = true,
-            title = "另存 PDF 副本",
+            title = stringResource(R.string.pdf_save_copy_title),
             onDismissRequest = { saveTarget = null },
         ) {
             Column {
-                TextField(value = newName, onValueChange = { newName = it }, label = "新文件名", singleLine = true)
+                TextField(value = newName, onValueChange = { newName = it }, label = stringResource(R.string.pdf_new_file_name), singleLine = true)
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(text = "取消", onClick = { saveTarget = null })
+                    TextButton(text = stringResource(R.string.cancel), onClick = { saveTarget = null })
                     Spacer(modifier = Modifier.size(12.dp))
                     TextButton(
-                        text = "保存",
+                        text = stringResource(R.string.save),
                         colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.textButtonColorsPrimary(),
                         onClick = {
                             scope.launch {
                                 val uri = withContext(Dispatchers.IO) {
                                     com.hyperss.app.util.PdfUtils.saveCopy(context, item, newName)
                                 }
-                                message = if (uri != null) "已保存到 Download/HyperSSDL" else "保存失败"
+                                message = if (uri != null) context.getString(R.string.pdf_saved) else context.getString(R.string.pdf_save_failed)
                                 saveTarget = null
                                 refresh()
                             }
@@ -282,9 +326,9 @@ fun PdfReaderScreen(onBack: () -> Unit) {
 
     // 导入中加载弹窗
     if (importing) {
-        OverlayDialog(
+        GlassDialog(
             show = true,
-            title = "正在导入 PDF…",
+            title = stringResource(R.string.pdf_importing),
             onDismissRequest = { },
         ) {
             Column(
@@ -299,14 +343,14 @@ fun PdfReaderScreen(onBack: () -> Unit) {
     }
 
     message?.let { msg ->
-        OverlayDialog(
+        GlassDialog(
             show = true,
-            title = "提示",
+            title = stringResource(R.string.hint),
             summary = msg,
             onDismissRequest = { message = null },
         ) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(text = "知道了", onClick = { message = null })
+                TextButton(text = stringResource(R.string.ok), onClick = { message = null })
             }
         }
     }
@@ -325,6 +369,9 @@ private fun PdfViewerOverlay(
         }
     }
     val pagerState = rememberPagerState { pages?.size ?: 0 }
+    // 液态玻璃采样层：记录「黑底 + 当前页 PDF」，悬浮玻璃元素折射透出页面画面
+    val canvasLayer = rememberBlackCanvasBackdrop()
+    val chipTint = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.55f)
 
     Box(
         modifier = Modifier
@@ -333,25 +380,37 @@ private fun PdfViewerOverlay(
     ) {
         if (pages == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("打开中…", color = androidx.compose.ui.graphics.Color.White)
+                Text(stringResource(R.string.pdf_opening), color = androidx.compose.ui.graphics.Color.White)
             }
         } else if (pages!!.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("无法打开该 PDF", color = androidx.compose.ui.graphics.Color.White)
+                Text(stringResource(R.string.pdf_cannot_open), color = androidx.compose.ui.graphics.Color.White)
             }
         } else {
-            HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .liquidGlassLayer(canvasLayer),
+            ) { page ->
                 ZoomablePdfPage(bitmap = pages!![page])
             }
-            Surface(
+            GlassSurface(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 60.dp),
-                shape = RoundedCornerShape(14.dp),
-                color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f),
+                cornerRadius = 14.dp,
+                background = chipTint,
+                liquidBackdrop = canvasLayer,
+                redrawKey = pagerState.currentPage,
             ) {
                 Text(
-                    item.name + "  (${pagerState.currentPage + 1}/${pages!!.size})",
+                    stringResource(
+                        R.string.pdf_page_indicator,
+                        item.name,
+                        pagerState.currentPage + 1,
+                        pages!!.size,
+                    ),
                     style = MiuixTheme.textStyles.footnote1,
                     color = androidx.compose.ui.graphics.Color.White,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
@@ -360,16 +419,18 @@ private fun PdfViewerOverlay(
             }
         }
 
-        Surface(
+        GlassSurface(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 26.dp, end = 16.dp)
                 .size(40.dp),
-            shape = RoundedCornerShape(20.dp),
-            color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f),
+            cornerRadius = 20.dp,
+            background = chipTint,
+            liquidBackdrop = canvasLayer,
+            redrawKey = pagerState.currentPage,
         ) {
             IconButton(onClick = onDismiss) {
-                Icon(MiuixIcons.Close, contentDescription = "关闭", tint = androidx.compose.ui.graphics.Color.White)
+                Icon(MiuixIcons.Close, contentDescription = stringResource(R.string.close), tint = androidx.compose.ui.graphics.Color.White)
             }
         }
     }

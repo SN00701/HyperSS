@@ -51,8 +51,10 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.hyperss.app.R
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -65,6 +67,9 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.hyperss.app.data.CaptureController
+import com.hyperss.app.ui.GlassSurface
+import com.hyperss.app.ui.glassStrokeBrush
+import com.hyperss.app.util.LocaleHelper
 import com.hyperss.app.util.Settings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -73,11 +78,9 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -202,6 +205,11 @@ class FloatingToolbarService : Service() {
             savedStateController.performRestore(null)
             registry.currentState = Lifecycle.State.RESUMED
         }
+    }
+
+    override fun attachBaseContext(newBase: Context) {
+        // 与 Activity 一致：按应用内语言偏好解析服务资源，悬浮工具条文案跟随所选语言
+        super.attachBaseContext(LocaleHelper.applyLocale(newBase))
     }
 
     override fun onCreate() {
@@ -449,11 +457,10 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
 
     @Composable
     private fun CollapsedBubble(appIcon: ImageBitmap?, onClick: () -> Unit) {
-        Surface(
+        // 静态玻璃：半透明主色垫 + 受光描边（系统覆盖窗无法采样背后画面，用静态玻璃体系）
+        GlassSurface(
             modifier = Modifier
-                .width(56.dp)
-                .height(56.dp)
-                .clip(CircleShape)
+                .size(56.dp)
                 .pointerInput(Unit) {
                     detectDragGesturesAfterLongPress { change, dragAmount ->
                         change.consume()
@@ -462,14 +469,13 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
                     }
                 }
                 .clickable(onClick = onClick),
-            shape = CircleShape,
-            color = MiuixBlueBg,
-            shadowElevation = 4.dp,
+            cornerRadius = 28.dp,
+            background = MiuixBlueBg.copy(alpha = 0.88f),
         ) {
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Icon(
                     MiuixIcons.Forward,
-                    contentDescription = "展开工具条",
+                    contentDescription = stringResource(R.string.float_expand),
                     tint = Color.White,
                     modifier = Modifier.size(24.dp),
                 )
@@ -481,12 +487,11 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
     private fun ExpandedPanel(uiState: ToolbarUi, session: CaptureController.State) {
         val pointsState = points.collectAsState().value
         val panelWidth = if (mode == CaptureMode.CALIBRATED_DISTANCE) 120.dp else 84.dp
-        Surface(
+        // 静态玻璃卡片：半透明深色垫 + 受光渐变描边，无投影
+        GlassSurface(
             modifier = Modifier.width(panelWidth),
-            shape = RoundedCornerShape(22.dp),
-            color = Color(0xF2212328),
-            contentColor = Color(0xFFF5F5F5),
-            shadowElevation = 8.dp,
+            cornerRadius = 22.dp,
+            background = Color(0xF2212328),
         ) {
             Column(
                 modifier = Modifier
@@ -497,7 +502,7 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
                 DragHandle()
                 Spacer(Modifier.height(2.dp))
                 IconButton(onClick = { touchInteraction(); ui.update { it.copy(collapsed = true) } }) {
-                    Icon(MiuixIcons.Back, contentDescription = "折叠", tint = Color(0xCCFFFFFF))
+                    Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.float_collapse), tint = Color(0xCCFFFFFF))
                 }
                 Spacer(Modifier.height(2.dp))
                 Text(
@@ -516,7 +521,7 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
                 MainButton(session, uiState, pointsState.size)
                 Spacer(Modifier.height(6.dp))
                 IconButton(onClick = { touchInteraction(); exitToolbar() }) {
-                    Icon(MiuixIcons.Close, contentDescription = "退出", tint = Color(0xAAFFFFFF))
+                    Icon(MiuixIcons.Close, contentDescription = stringResource(R.string.float_exit), tint = Color(0xAAFFFFFF))
                 }
             }
         }
@@ -543,7 +548,7 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     private fun AddIconButton(enabled: Boolean) {
-        Surface(
+        GlassSurface(
             modifier = Modifier
                 .width(56.dp)
                 .height(40.dp)
@@ -552,9 +557,8 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
                     onClick = { onAddIcon() },
                     onLongClick = { onClearIcons() },
                 ),
-            shape = RoundedCornerShape(20.dp),
-            color = if (enabled) ReadyGreen else DisabledGray,
-            contentColor = Color.White,
+            cornerRadius = 20.dp,
+            background = (if (enabled) ReadyGreen else DisabledGray).copy(alpha = 0.88f),
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("+", style = MiuixTheme.textStyles.button, color = Color.White)
@@ -564,14 +568,13 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
 
     @Composable
     private fun LoopCountButton(enabled: Boolean) {
-        Surface(
+        GlassSurface(
             modifier = Modifier
                 .width(56.dp)
                 .height(40.dp)
                 .clickable(enabled = enabled) { touchInteraction(); ui.update { it.copy(loopEditing = true) } },
-            shape = RoundedCornerShape(20.dp),
-            color = if (enabled) MiuixBlueBg else DisabledGray,
-            contentColor = Color.White,
+            cornerRadius = 20.dp,
+            background = (if (enabled) MiuixBlueBg else DisabledGray).copy(alpha = 0.88f),
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
@@ -586,12 +589,10 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
     @Composable
     private fun LoopCountEditor() {
         var text by remember { mutableStateOf(loopCount.toString()) }
-        Surface(
+        GlassSurface(
             modifier = Modifier.width(220.dp),
-            shape = RoundedCornerShape(22.dp),
-            color = Color(0xF2212328),
-            contentColor = Color(0xFFF5F5F5),
-            shadowElevation = 8.dp,
+            cornerRadius = 22.dp,
+            background = Color(0xF2212328),
         ) {
             Column(
                 modifier = Modifier
@@ -599,11 +600,11 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
                     .padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text("循环次数", style = MiuixTheme.textStyles.title3, color = Color.White)
+                Text(stringResource(R.string.project_settings_loop_count), style = MiuixTheme.textStyles.title3, color = Color.White)
                 TextField(
                     value = text,
                     onValueChange = { text = it.filter { c -> c.isDigit() } },
-                    label = "循环次数（0 = 不限）",
+                    label = stringResource(R.string.project_settings_loop_count_value),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
@@ -613,13 +614,13 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     TextButton(
-                        text = "取消",
+                        text = stringResource(R.string.cancel),
                         onClick = { ui.update { it.copy(loopEditing = false) } },
                         modifier = Modifier.weight(1f),
                     )
                     Spacer(Modifier.width(20.dp))
                     TextButton(
-                        text = "确定",
+                        text = stringResource(R.string.confirm),
                         onClick = {
                             loopCount = text.toIntOrNull() ?: 0
                             Settings.setProjectLoopCount(projectId, loopCount)
@@ -649,16 +650,22 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
                 }
             }
         }
-        Button(
-            onClick = { onMainButtonClick() },
-            enabled = enabled,
+        // 状态玻璃键：状态色半透明垫 + 受光描边（绿=就绪 / 黄=运行 / 红=结束 / 灰=禁用）
+        GlassSurface(
             modifier = Modifier
-                .width(52.dp)
-                .height(52.dp),
-            colors = ButtonDefaults.buttonColors(color = bg, contentColor = Color.White),
+                .size(52.dp)
+                .clickable(
+                    interactionSource = null,
+                    indication = null,
+                    enabled = enabled,
+                    onClick = { onMainButtonClick() },
+                ),
             cornerRadius = 26.dp,
+            background = bg.copy(alpha = 0.9f),
         ) {
-            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+            }
         }
     }
 
@@ -696,7 +703,7 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
         if (running.get()) return
         val pts = points.value
         if (pts.size >= 9) {
-            ui.update { it.copy(status = "最多 9 个图标") }
+            ui.update { it.copy(status = getString(R.string.float_max_icons)) }
             return
         }
         val metrics = resources.displayMetrics
@@ -708,7 +715,7 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
         points.update { it + CalibPoint(x, y) }
         syncBadgeWindows()
         ui.update {
-            it.copy(status = if (count + 1 < 2) "再点＋添加图标" else "拖动图标调整方向")
+            it.copy(status = if (count + 1 < 2) getString(R.string.float_add_icon) else getString(R.string.float_drag_icons))
         }
     }
 
@@ -716,7 +723,7 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
         if (running.get()) return
         points.update { emptyList() }
         removeAllBadgeWindows()
-        ui.update { it.copy(status = "点＋添加图标") }
+        ui.update { it.copy(status = getString(R.string.float_add_icon)) }
     }
 
     private fun touchInteraction() {
@@ -733,9 +740,9 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
         syncBadgeWindows()
         ui.update {
             it.copy(status = when {
-                remaining.isEmpty() -> "点＋添加图标"
-                remaining.size < 2 -> "再添加一个图标"
-                else -> "拖动图标调整方向"
+                remaining.isEmpty() -> getString(R.string.float_add_icon)
+                remaining.size < 2 -> getString(R.string.float_add_one_more)
+                else -> getString(R.string.float_drag_icons)
             })
         }
     }
@@ -765,12 +772,12 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
             projectId, startMode, metrics.heightPixels, stepDp, metrics.densityDpi.toFloat(),
         )
         Settings.lastProjectId = projectId
-        ui.update { it.copy(status = "拼接中") }
+        ui.update { it.copy(status = getString(R.string.float_status_stitching)) }
     }
 
     private fun pauseSession() {
         CaptureController.userPaused = true
-        CaptureController.pause("用户暂停")
+        CaptureController.pause("user")
     }
 
     private fun resumeSession() {
@@ -802,15 +809,15 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
     private fun defaultStatus(session: CaptureController.State, pointCount: Int = 0): String = when (session) {
         is CaptureController.State.Idle ->
             if (mode == CaptureMode.CALIBRATED_DISTANCE && pointCount < 2) {
-                if (pointCount == 0) "点＋添加图标" else "再添加一个图标"
+                if (pointCount == 0) getString(R.string.float_add_icon) else getString(R.string.float_add_one_more)
             } else {
-                "就绪"
+                getString(R.string.float_status_ready)
             }
-        is CaptureController.State.Preparing -> "准备中"
-        is CaptureController.State.Active -> "拼接中"
-        is CaptureController.State.Paused -> "暂停"
-        is CaptureController.State.Finished -> "完成"
-        is CaptureController.State.Failed -> "失败"
+        is CaptureController.State.Preparing -> getString(R.string.float_status_preparing)
+        is CaptureController.State.Active -> getString(R.string.float_status_stitching)
+        is CaptureController.State.Paused -> getString(R.string.float_status_paused)
+        is CaptureController.State.Finished -> getString(R.string.float_status_finished)
+        is CaptureController.State.Failed -> getString(R.string.float_status_failed)
     }
 
     private fun observeController() {
@@ -823,20 +830,20 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
                                 running.set(true)
                                 startCaptureThread()
                             }
-                            ui.update { it.copy(status = "拼接中") }
+                            ui.update { it.copy(status = getString(R.string.float_status_stitching)) }
                         }
                         is CaptureController.State.Paused -> {
                             running.set(false)
-                            ui.update { it.copy(status = "暂停") }
+                            ui.update { it.copy(status = getString(R.string.float_status_paused)) }
                         }
                         is CaptureController.State.Finished -> {
                             running.set(false)
-                            ui.update { it.copy(status = "完成") }
+                            ui.update { it.copy(status = getString(R.string.float_status_finished)) }
                         }
                         is CaptureController.State.Failed -> {
                             running.set(false)
                             Log.e("HyperSS", "Capture failed: ${state.message}")
-                            ui.update { it.copy(status = "失败") }
+                            ui.update { it.copy(status = getString(R.string.float_status_failed)) }
                         }
                         else -> Unit
                     }
@@ -902,7 +909,7 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
                 return
             }
             captureFrames++
-            ui.update { it.copy(status = "拼接中 $captureFrames/$maxFrames") }
+            ui.update { it.copy(status = getString(R.string.float_status_stitching_count, captureFrames, maxFrames)) }
 
             val provider = CaptureAccessibilityService.instance ?: run {
                 Thread.sleep(200)
@@ -933,7 +940,7 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
                 continue
             }
             if (captureFrames >= maxFrames) {
-                ui.update { it.copy(status = "已达 $maxFrames 张，收尾保存") }
+                ui.update { it.copy(status = getString(R.string.float_limit_reached, maxFrames)) }
                 CaptureController.finish()
                 running.set(false)
                 return
@@ -959,14 +966,14 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
                 // 低置信度被置为 Paused：恢复会话、跳过该帧，等待下一次滑动
                 Log.d("HyperSS", "captureLoopManual: 本帧拼接跳过（画面跳变/重叠不足），继续等待")
                 CaptureController.resume()
-                ui.update { it.copy(status = "画面跳变已跳过·请继续滑动") }
+                ui.update { it.copy(status = getString(R.string.float_jump_skipped)) }
                 if (!waitManualScroll(maxFrames)) return
                 continue
             }
             captureFrames++
             Log.d("HyperSS", "captureLoopManual: 已拼接第 $captureFrames 帧")
             if (captureFrames >= maxFrames) {
-                ui.update { it.copy(status = "已达 $maxFrames 张，收尾保存") }
+                ui.update { it.copy(status = getString(R.string.float_limit_reached, maxFrames)) }
                 CaptureController.finish()
                 running.set(false)
                 return
@@ -995,13 +1002,13 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
                 val idleRemain = SCROLL_WAIT_TIMEOUT_MS - (now - waitStart)
                 if (idleRemain <= 0) {
                     Log.d("HyperSS", "waitManualScroll: 30s 未滑动，自动保存退出")
-                    ui.update { it.copy(status = "长时间未滑动，已自动保存") }
+                    ui.update { it.copy(status = getString(R.string.float_wait_idle)) }
                     CaptureController.finish()
                     running.set(false)
                     return false
                 }
                 ui.update {
-                    it.copy(status = "已拼 $captureFrames/$maxFrames·请滑动（${(idleRemain + 999) / 1000}s后自动保存）")
+                    it.copy(status = getString(R.string.float_wait_scroll, captureFrames, maxFrames, (idleRemain + 999) / 1000))
                 }
             } else {
                 // 已滑动：等待停止，停止满 5s 截下一帧
@@ -1010,7 +1017,7 @@ private fun moveBadgeWindowTo(index: Int, point: CalibPoint, badgePx: Int) {
                     return true
                 }
                 ui.update {
-                    it.copy(status = "已拼 $captureFrames/$maxFrames·${(remain + 999) / 1000}s后截图")
+                    it.copy(status = getString(R.string.float_wait_capture, captureFrames, maxFrames, (remain + 999) / 1000))
                 }
             }
             Thread.sleep(300)

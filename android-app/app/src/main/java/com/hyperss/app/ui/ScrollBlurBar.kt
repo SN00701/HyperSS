@@ -1,5 +1,6 @@
 package com.hyperss.app.ui
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -98,6 +99,21 @@ fun rememberTopBarBlurFraction(
         derivedStateOf {
             if (state.firstVisibleItemIndex > 0) 1f
             else (state.firstVisibleItemScrollOffset / rangePx).coerceIn(0f, 1f)
+        }
+    }
+    return fraction
+}
+
+/** [rememberTopBarBlurFraction] 的 [androidx.compose.foundation.verticalScroll] 版本（整页单一滚动）。 */
+@Composable
+fun rememberTopBarBlurFraction(
+    state: ScrollState,
+    fadeRange: Dp = 72.dp,
+): Float {
+    val rangePx = with(LocalDensity.current) { fadeRange.toPx() }
+    val fraction by remember(state, rangePx) {
+        derivedStateOf {
+            (state.value / rangePx).coerceIn(0f, 1f)
         }
     }
     return fraction

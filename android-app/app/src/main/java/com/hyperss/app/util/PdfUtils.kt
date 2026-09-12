@@ -200,7 +200,7 @@ object PdfUtils {
                     list.add(
                         PdfItem(
                             uri = uri,
-                            name = cursor.getString(nameCol) ?: "未命名.pdf",
+                            name = cursor.getString(nameCol) ?: context.getString(com.hyperss.app.R.string.pdf_default_name),
                             sizeBytes = cursor.getLong(sizeCol),
                             lastModified = cursor.getLong(dateCol) * 1000L,
                         )

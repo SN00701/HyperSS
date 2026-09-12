@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import uniffi.hyperss_core.ImageInfo
+import uniffi.hyperss_core.ProjectInfo
 import java.io.File
 import java.io.FileOutputStream
 
@@ -29,6 +30,10 @@ class ProjectDetailViewModel(app: Application) : AndroidViewModel(app) {
     private val _images = MutableStateFlow<List<ImageInfo>>(emptyList())
     val images: StateFlow<List<ImageInfo>> = _images.asStateFlow()
 
+    /** 所属项目信息（重命名等场景取显示名）。 */
+    private val _project = MutableStateFlow<ProjectInfo?>(null)
+    val project: StateFlow<ProjectInfo?> = _project.asStateFlow()
+
     /** 图片列表排序：false = 按命名序号从小到大，true = 从大到小。 */
     private val _sortDesc = MutableStateFlow(false)
     val sortDesc: StateFlow<Boolean> = _sortDesc.asStateFlow()
@@ -39,6 +44,10 @@ class ProjectDetailViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _busy = MutableStateFlow(false)
     val busy: StateFlow<Boolean> = _busy.asStateFlow()
+
+    /** 图片文件版本：原地编辑保存后自增，驱动缩略图/查看器重新解码。 */
+    private val _imagesRevision = MutableStateFlow(0)
+    val imagesRevision: StateFlow<Int> = _imagesRevision.asStateFlow()
 
     private val _selected = MutableStateFlow<Set<Long>>(emptySet())
     val selected: StateFlow<Set<Long>> = _selected.asStateFlow()
@@ -58,7 +67,9 @@ class ProjectDetailViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _busy.value = true
             try {
-                _images.value = repo.listImages(id)
+            _images.value = repo.listImages(id)
+            _project.value = repo.getProject(id)
+            _imagesRevision.value += 1
             } catch (e: Throwable) {
                 _error.value = repo.describe(e)
             } finally {
@@ -118,8 +129,53 @@ class ProjectDetailViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** 重命名项目（仅改显示名，不影响前缀与图片文件名）。 */
+    fun renameProject(displayName: String, onDone: (Boolean) -> Unit = {}) {
+        val name = displayName.trim()
+        if (name.isEmpty()) return
+        val id = _projectId.value
+        if (id <= 0) return
+        viewModelScope.launch {
+            try {
+                repo.renameProject(id, name)
+                refresh()
+                onDone(true)
+            } catch (e: Throwable) {
+                _error.value = repo.describe(e)
+                onDone(false)
+            }
+        }
+    }
+
     fun imageFile(image: ImageInfo): File =
         File(RustBridge.storageRoot(getApplication()), image.filePath)
+
+    /**
+     * 把编辑后的 PNG 数据原地覆盖写回 [image] 对应文件（原子替换），
+     * 保持文件路径 / seq / alias 不变；成功后自增 [imagesRevision] 驱动 UI 重新解码。
+     */
+    fun saveImagePng(image: ImageInfo, png: ByteArray, onDone: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            val ok = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    val file = imageFile(image)
+                    val tmp = File(file.parentFile, "${file.name}.tmp")
+                    tmp.writeBytes(png)
+                    java.nio.file.Files.move(
+                        tmp.toPath(),
+                        file.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                    )
+                }.isSuccess
+            }
+            if (ok) {
+                _imagesRevision.value += 1
+            } else {
+                _error.value = getApplication<Application>().getString(com.hyperss.app.R.string.editor_save_failed)
+            }
+            onDone(ok)
+        }
+    }
 
     /** 批量导出选中图片到系统相册，返回成功数量。 */
     fun exportImagesToGallery(images: List<ImageInfo>, onDone: (Int) -> Unit = {}) {
@@ -148,7 +204,7 @@ class ProjectDetailViewModel(app: Application) : AndroidViewModel(app) {
                     resolver.update(uri, values, null, null)
                     ok++
                 } catch (e: Throwable) {
-                    _error.value = e.message ?: "导出失败"
+                    _error.value = e.message ?: getApplication<Application>().getString(com.hyperss.app.R.string.detail_export_failed)
                 }
             }
             onDone(ok)
@@ -220,7 +276,7 @@ class ProjectDetailViewModel(app: Application) : AndroidViewModel(app) {
                 // MediaStore 插入即完成索引，无需再发媒体扫描广播（Q+ 已废弃且无效）
                 onDone(true)
             } catch (e: Throwable) {
-                _error.value = e.message ?: "导出失败"
+                _error.value = e.message ?: getApplication<Application>().getString(com.hyperss.app.R.string.detail_export_failed)
                 onDone(false)
             }
         }

@@ -6,7 +6,7 @@
 
 **智能长截图 · 项目化管理 · 本地优先**
 
-[![Version](https://img.shields.io/badge/version-0.0.10beta-blue)]()
+[![Version](https://img.shields.io/badge/version-0.1.0beta-blue)]()
 [![Platform](https://img.shields.io/badge/platform-Android%20(64--bit)-green)]()
 [![License](https://img.shields.io/badge/license-MIT-orange)]()
 
@@ -24,9 +24,11 @@
   - 📏 自定义步长滚动截图（步长可调，适配任意应用）
   - 🎯 双点取距滑动截图（标定两点自动计算滚动距离）
 - **项目化管理**：截图按项目归档、自动编号、支持批量整理与阅读视图
+- **图片编辑**：水印、马赛克，支持单张与批量编辑（左右滑动逐张实时预览）
+- **灵活导出**：批量导出图片到系统相册，或按每页张数排版导出 PDF（支持布局预览）
 - **本地优先、零采集**：全部截图与拼接均在设备本地完成，不申请网络权限，无任何数据上报
 - **Rust 核心**：图像拼接、编解码、项目数据层由 Rust 实现（UniFFI 绑定），兼顾性能与内存安全
-- **HyperOS 风格 UI**：Jetpack Compose + [miuix](https://github.com/miuix-kotlin-multiplatform/miuix) 组件库，悬浮球 + 玻璃拟态视觉 + 毛玻璃标题栏
+- **液态玻璃 UI**：Jetpack Compose + [miuix](https://github.com/miuix-kotlin-multiplatform/miuix) 组件库 + [kyant/backdrop](https://github.com/kyant/backdrop) 液态玻璃效果（折射 + 模糊 + 鲜艳度），悬浮球 + 悬浮工具条
 
 ## 🏗️ 技术栈
 
@@ -78,7 +80,7 @@ cd android-app
 
 ### 版本号
 
-版本统一由 `android-app/version.properties` 管理，当前为 **0.0.10beta**，APK `versionName` 与应用内"关于"页显示一致。应用启动时会自动检查 GitHub Releases 更新，也可在设置页手动检查。
+版本统一由 `android-app/version.properties` 管理，当前为 **0.1.0beta**，APK `versionName` 与应用内"关于"页显示一致。应用启动时会自动检查 GitHub Releases 更新，也可在设置页手动检查。历史版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 📡 发布流程（维护者）
 
@@ -107,6 +109,6 @@ cd android-app
 
 <div align="center">
 
-**当前版本：0.0.10beta** · 本项目处于早期开发阶段，功能与接口可能随时调整
+**当前版本：0.1.0beta** · 本项目处于早期开发阶段，功能与接口可能随时调整
 
 </div>

@@ -39,7 +39,6 @@ import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.File
 import top.yukonga.miuix.kmp.icon.extended.Play
 import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -65,16 +64,17 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hyperss.app.R
 import com.hyperss.app.service.FloatingToolbarService
-import com.hyperss.app.ui.BlurTopBar
-import com.hyperss.app.ui.ambientGlassBackground
+import com.hyperss.app.ui.AmbientGlassLayer
+import com.hyperss.app.ui.GlassDialog
 import com.hyperss.app.ui.GlassFloatingButton
 import com.hyperss.app.ui.GlassSurface
+import com.hyperss.app.ui.LiquidTopBar
+import com.hyperss.app.ui.liquidGlassLayer
+import com.hyperss.app.ui.rememberLiquidBackdrop
+import com.hyperss.app.ui.rememberLiquidContentBackdrop
 import com.hyperss.app.ui.rememberTopBarBlurFraction
 import com.hyperss.app.ui.theme.Danger
 import com.hyperss.app.ui.theme.LightTextSecondary
-import com.hyperss.app.ui.theme.MiuixBlue
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import com.hyperss.app.util.Permissions
 import com.hyperss.app.util.Settings
 import uniffi.hyperss_core.CaptureMode
@@ -234,13 +234,16 @@ fun HomeScreen(
 
     val context = LocalContext.current
 
-    // 顶部动态模糊：内容滚动时毛玻璃标题栏渐入
-    val backdrop = rememberLayerBackdrop()
+    // 顶部液态玻璃：内容滚动时玻璃标题栏渐入
+    val liquidAmbient = rememberLiquidBackdrop()
+    val liquidContent = rememberLiquidContentBackdrop()
     val gridState = rememberLazyGridState()
     val blurFraction = rememberTopBarBlurFraction(gridState)
     var barHeight by remember { mutableStateOf(0.dp) }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // 环境光斑玻璃层：项目卡片液态玻璃采样它，光斑折射出玻璃质感
+        AmbientGlassLayer(liquidAmbient)
         if (projects.isEmpty() && !busy) {
             EmptyState(
                 modifier = Modifier
@@ -253,7 +256,7 @@ fun HomeScreen(
                 state = gridState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .layerBackdrop(backdrop).ambientGlassBackground(),
+                    .liquidGlassLayer(liquidContent),
                 contentPadding = PaddingValues(
                     top = barHeight + 20.dp,
                     start = 20.dp,
@@ -267,6 +270,7 @@ fun HomeScreen(
                         ProjectCard(
                             project = project,
                             deleteMode = deleteMode,
+                            liquidBackdrop = liquidAmbient,
                             onClick = { if (deleteMode) { deleteMode = false } else onOpenProject(project.id) },
                             onLongPress = { deleteMode = true },
                             onDelete = { pendingDelete = project },
@@ -284,42 +288,48 @@ fun HomeScreen(
                 }
             }
 
-        BlurTopBar(
-            backdrop = backdrop,
+        LiquidTopBar(
+            backdrop = liquidContent,
             fraction = blurFraction,
+            refreshKey = gridState.firstVisibleItemIndex * 1_000_000 + gridState.firstVisibleItemScrollOffset,
             modifier = Modifier.align(Alignment.TopCenter),
             onHeightChanged = { barHeight = it },
         ) {
             Header()
         }
 
+        // 与项目详情页「编辑/导出」悬浮按钮同款：
+        // 主色默认玻璃垫（不指定 background）、56dp 尺寸、24dp 边距、按钮间距 12dp
         Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(20.dp),
+                .padding(24.dp),
             horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             GlassFloatingButton(
                 icon = MiuixIcons.File,
-                contentDescription = "PDF 阅读器",
+                contentDescription = stringResource(R.string.pdf_reader_title),
                 onClick = onOpenReader,
-                size = 52.dp,
-                background = MiuixBlue,
+                size = 56.dp,
+                liquidBackdrop = liquidContent,
+                redrawKey = gridState.firstVisibleItemIndex * 1_000_000 + gridState.firstVisibleItemScrollOffset,
             )
             GlassFloatingButton(
                 icon = MiuixIcons.Settings,
                 contentDescription = stringResource(R.string.home_settings),
                 onClick = onSettings,
-                size = 52.dp,
-                background = LightTextSecondary,
+                size = 56.dp,
+                liquidBackdrop = liquidContent,
+                redrawKey = gridState.firstVisibleItemIndex * 1_000_000 + gridState.firstVisibleItemScrollOffset,
             )
             GlassFloatingButton(
                 icon = MiuixIcons.Add,
                 contentDescription = stringResource(R.string.home_new_project),
                 onClick = { showNewProject = true },
-                size = 64.dp,
-                background = MiuixBlue,
+                size = 56.dp,
+                liquidBackdrop = liquidContent,
+                redrawKey = gridState.firstVisibleItemIndex * 1_000_000 + gridState.firstVisibleItemScrollOffset,
             )
         }
     }
@@ -337,7 +347,7 @@ fun HomeScreen(
     }
 
     pendingDelete?.let { project ->
-        OverlayDialog(
+        GlassDialog(
             show = true,
             title = stringResource(R.string.delete_project_title),
             summary = stringResource(R.string.delete_project_confirm, project.displayName),
@@ -367,7 +377,7 @@ fun HomeScreen(
     }
 
     if (showPermissionDialog) {
-        OverlayDialog(
+        GlassDialog(
             show = true,
             title = stringResource(R.string.permission_needed_title),
             summary = stringResource(R.string.permission_needed_message),
@@ -397,7 +407,7 @@ fun HomeScreen(
     }
 
     error?.let { msg ->
-        OverlayDialog(
+        GlassDialog(
             show = true,
             title = stringResource(R.string.error_title),
             summary = msg,
@@ -457,6 +467,7 @@ private fun EmptyState(modifier: Modifier = Modifier) {
 private fun ProjectCard(
     project: ProjectInfo,
     deleteMode: Boolean,
+    liquidBackdrop: com.kyant.backdrop.Backdrop? = null,
     onClick: () -> Unit,
     onLongPress: () -> Unit,
     onDelete: () -> Unit,
@@ -487,6 +498,7 @@ private fun ProjectCard(
                 )
                 .padding(14.dp),
             cornerRadius = 20.dp,
+            liquidBackdrop = liquidBackdrop,
         ) {
             Row(
                 modifier = Modifier.fillMaxSize(),
@@ -536,10 +548,15 @@ private fun ProjectCard(
                     .size(22.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Surface(shape = RoundedCornerShape(11.dp), color = Danger) {
+                // 删除徽标：危险色玻璃（半透明垫 + 受光描边）
+                GlassSurface(
+                    modifier = Modifier.fillMaxSize(),
+                    cornerRadius = 11.dp,
+                    background = Danger.copy(alpha = 0.9f),
+                ) {
                     IconButton(
                         onClick = onDelete,
-                        modifier = Modifier.size(22.dp),
+                        modifier = Modifier.fillMaxSize(),
                     ) {
                         Text("\u00d7", color = androidx.compose.ui.graphics.Color.White)
                     }

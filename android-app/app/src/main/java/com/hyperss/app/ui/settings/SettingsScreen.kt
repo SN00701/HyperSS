@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
@@ -34,7 +35,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,14 +52,17 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hyperss.app.R
 import com.hyperss.app.util.Permissions
 import com.hyperss.app.util.Settings
-import com.hyperss.app.ui.BlurTopBar
+import com.hyperss.app.ui.AmbientGlassLayer
 import com.hyperss.app.ui.UpdateAvailableDialog
-import com.hyperss.app.ui.ambientGlassBackground
+import com.hyperss.app.ui.GlassChipButton
+import com.hyperss.app.ui.GlassDialog
 import com.hyperss.app.ui.GlassSurface
+import com.hyperss.app.ui.LiquidTopBar
+import com.hyperss.app.ui.liquidGlassLayer
+import com.hyperss.app.ui.rememberLiquidBackdrop
+import com.hyperss.app.ui.rememberLiquidContentBackdrop
 import com.hyperss.app.ui.rememberTopBarBlurFraction
 import com.hyperss.app.ui.theme.LightTextSecondary
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 
 @Composable
 fun SettingsScreen(
@@ -93,19 +96,22 @@ fun SettingsScreen(
         }
     }
 
-    // 顶部动态模糊：内容滚动时毛玻璃标题栏渐入
-    val backdrop = rememberLayerBackdrop()
+    // 顶部液态玻璃：内容滚动时玻璃标题栏渐入
+    val liquidAmbient = rememberLiquidBackdrop()
+    val liquidContent = rememberLiquidContentBackdrop()
     val listState = rememberLazyListState()
     val blurFraction = rememberTopBarBlurFraction(listState)
     var barHeight by remember { mutableStateOf(0.dp) }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // 环境光斑玻璃层：设置卡片液态玻璃采样它
+        AmbientGlassLayer(liquidAmbient)
         // 滚动列表置于 backdrop 层下
         LazyColumn(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .layerBackdrop(backdrop).ambientGlassBackground(),
+                .liquidGlassLayer(liquidContent),
             contentPadding = PaddingValues(
                 top = barHeight + 20.dp,
                 start = 20.dp,
@@ -115,7 +121,7 @@ fun SettingsScreen(
         ) {
             item {
                 SectionTitle(stringResource(R.string.settings_permissions))
-                GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+                GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp, liquidBackdrop = liquidAmbient) {
                     Column {
                         PermissionRow(
                             title = stringResource(R.string.settings_accessibility),
@@ -159,7 +165,7 @@ fun SettingsScreen(
             item {
                 Spacer(modifier = Modifier.height(24.dp))
                 SectionTitle(stringResource(R.string.settings_appearance))
-                GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+                GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp, liquidBackdrop = liquidAmbient) {
                     Column {
                         RadioGroup(
                             title = stringResource(R.string.settings_language),
@@ -194,7 +200,7 @@ fun SettingsScreen(
             item {
                 Spacer(modifier = Modifier.height(24.dp))
                 SectionTitle(stringResource(R.string.settings_capture))
-                GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+                GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp, liquidBackdrop = liquidAmbient) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -233,11 +239,28 @@ fun SettingsScreen(
             item {
                 Spacer(modifier = Modifier.height(24.dp))
                 SectionTitle(stringResource(R.string.settings_about))
-                GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+                GlassSurface(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp, liquidBackdrop = liquidAmbient) {
                     Column {
                         AboutRow(stringResource(R.string.settings_version_label), state.version)
                         AboutRow(stringResource(R.string.settings_license), "MIT")
-                        AboutRow(stringResource(R.string.settings_privacy), stringResource(R.string.settings_privacy_desc))
+                        // 隐私说明：描述较长，标题在上、描述作为多行副标题在下（避免并排挤压标题）
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                        ) {
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                Text(stringResource(R.string.settings_privacy), style = MiuixTheme.textStyles.body2)
+                                Text(
+                                    stringResource(R.string.settings_privacy_desc),
+                                    style = MiuixTheme.textStyles.footnote2,
+                                    color = LightTextSecondary,
+                                )
+                            }
+                        }
                         AboutRow(stringResource(R.string.settings_feedback), "GitHub Issues")
                         val updateState by viewModel.updateState.collectAsState()
                         Row(
@@ -273,9 +296,10 @@ fun SettingsScreen(
                 }
             }
         }
-        BlurTopBar(
-            backdrop = backdrop,
+        LiquidTopBar(
+            backdrop = liquidContent,
             fraction = blurFraction,
+            refreshKey = listState.firstVisibleItemIndex * 1_000_000 + listState.firstVisibleItemScrollOffset,
             modifier = Modifier.align(Alignment.TopCenter),
             onHeightChanged = { barHeight = it },
         ) {
@@ -284,9 +308,21 @@ fun SettingsScreen(
                     .fillMaxWidth()
                     .padding(top = 48.dp, start = 4.dp, end = 8.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
+                // 返回玻璃圆钮：折射透出滚动内容
+                GlassChipButton(
+                    onClick = onBack,
+                    modifier = Modifier.size(40.dp),
+                    liquidBackdrop = liquidContent,
+                    redrawKey = listState.firstVisibleItemIndex * 1_000_000 + listState.firstVisibleItemScrollOffset,
+                    shape = CircleShape,
+                ) {
+                    Icon(
+                        MiuixIcons.Back,
+                        contentDescription = stringResource(R.string.back),
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
                 Text(stringResource(R.string.settings_title), style = MiuixTheme.textStyles.title1)
             }
@@ -294,7 +330,7 @@ fun SettingsScreen(
     }
 
     if (showRestartDialog) {
-        OverlayDialog(
+        GlassDialog(
             show = true,
             title = stringResource(R.string.settings_saved_title),
             summary = stringResource(R.string.settings_restart_message),
@@ -321,7 +357,7 @@ fun SettingsScreen(
     }
 
     if (showDisclaimer) {
-        OverlayDialog(
+        GlassDialog(
             show = true,
             title = stringResource(R.string.settings_disclaimer),
             summary = stringResource(R.string.settings_disclaimer_content),
@@ -351,7 +387,7 @@ fun SettingsScreen(
                 viewModel.dismissUpdateDialog()
             },
         )
-        UpdateUi.UpToDate -> OverlayDialog(
+        UpdateUi.UpToDate -> GlassDialog(
             show = true,
             title = stringResource(R.string.update_check),
             summary = stringResource(R.string.update_up_to_date),
@@ -364,7 +400,7 @@ fun SettingsScreen(
                 TextButton(text = stringResource(R.string.ok), onClick = { viewModel.dismissUpdateDialog() })
             }
         }
-        is UpdateUi.Failed -> OverlayDialog(
+        is UpdateUi.Failed -> GlassDialog(
             show = true,
             title = stringResource(R.string.update_check),
             summary = stringResource(R.string.update_check_failed_reason, u.reason),

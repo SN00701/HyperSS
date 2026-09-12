@@ -17,7 +17,6 @@ import com.hyperss.app.R
 import com.hyperss.app.util.UpdateChecker
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 
 /** 打开 GitHub Releases 页面（交由浏览器下载安装包）。 */
 fun openReleasesPage(context: android.content.Context) {
@@ -49,7 +48,7 @@ fun UpdateAvailableDialog(
             append(notes.take(400))
         }
     }
-    OverlayDialog(
+    GlassDialog(
         show = true,
         title = stringResource(R.string.update_new_version_title),
         summary = summary,

@@ -116,17 +116,21 @@ class RustRepository {
         maxOverlap: UInt,
     ): UInt = RustBridge.calibrateOffset(startPng, endPng, minOverlap, maxOverlap)
 
-    /** 把 UniFFI 异常转成用户可读信息。 */
+    /** 把 UniFFI 异常转成用户可读信息（按当前语言资源取文案，核心未初始化时回退中文）。 */
     fun describe(e: Throwable): String = when (e) {
-        is CoreException.InvalidPrefix -> "前缀不合法：${e.v1}"
-        is CoreException.PrefixExists -> "前缀已存在：${e.prefix}"
-        is CoreException.ProjectNotFound -> "项目不存在"
-        is CoreException.ImageNotFound -> "图片不存在"
-        is CoreException.SessionNotFound -> "会话不存在"
-        is CoreException.StitchLowConfidence -> "画面变化过大，拼接失败（置信度过低）"
-        is CoreException.WidthMismatch -> "截图宽度不一致，无法拼接"
-        is CoreException.SequenceExhausted -> "序号已用尽"
-        is CoreException.NoDraft -> "没有可恢复的草稿"
+        is CoreException.InvalidPrefix -> res(com.hyperss.app.R.string.error_invalid_prefix, e.v1)
+        is CoreException.PrefixExists -> res(com.hyperss.app.R.string.error_prefix_exists, e.prefix)
+        is CoreException.ProjectNotFound -> res(com.hyperss.app.R.string.error_project_not_found)
+        is CoreException.ImageNotFound -> res(com.hyperss.app.R.string.error_image_not_found)
+        is CoreException.SessionNotFound -> res(com.hyperss.app.R.string.error_session_not_found)
+        is CoreException.StitchLowConfidence -> res(com.hyperss.app.R.string.error_stitch_low_confidence)
+        is CoreException.WidthMismatch -> res(com.hyperss.app.R.string.error_width_mismatch)
+        is CoreException.SequenceExhausted -> res(com.hyperss.app.R.string.error_sequence_exhausted)
+        is CoreException.NoDraft -> res(com.hyperss.app.R.string.error_no_draft)
         else -> e.message ?: e.javaClass.simpleName
     }
+
+    private fun res(id: Int, vararg args: Any?): String = runCatching {
+        RustBridge.appContext.getString(id, *args)
+    }.getOrDefault(id.toString())
 }

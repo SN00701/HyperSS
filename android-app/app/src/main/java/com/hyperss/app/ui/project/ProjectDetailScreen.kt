@@ -2,6 +2,7 @@ package com.hyperss.app.ui.project
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -22,13 +23,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.derivedStateOf
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -45,9 +47,9 @@ import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.Share
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -64,21 +66,31 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.hyperss.app.ui.BlurTopBar
-import com.hyperss.app.ui.ambientGlassBackground
+import com.hyperss.app.R
+import com.hyperss.app.ui.AmbientGlassLayer
+import com.hyperss.app.ui.GlassButton
+import com.hyperss.app.ui.GlassChipButton
+import com.hyperss.app.ui.GlassDialog
 import com.hyperss.app.ui.GlassFloatingButton
+import com.hyperss.app.ui.GlassSurface
 import com.hyperss.app.ui.glassStrokeBrush
+import com.hyperss.app.ui.LiquidTopBar
+import com.hyperss.app.ui.liquidGlassLayer
+import com.hyperss.app.ui.redrawOn
+import com.hyperss.app.ui.rememberBlackCanvasBackdrop
+import com.hyperss.app.ui.rememberLiquidBackdrop
+import com.hyperss.app.ui.rememberLiquidContentBackdrop
 import com.hyperss.app.ui.rememberTopBarBlurFraction
 import com.hyperss.app.ui.util.rememberScaledBitmap
 import com.hyperss.app.util.PdfUtils
 import androidx.compose.ui.graphics.asImageBitmap
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import uniffi.hyperss_core.ImageInfo
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ProjectDetailScreen(
     projectId: Long,
@@ -87,8 +99,10 @@ fun ProjectDetailScreen(
 ) {
     val images by viewModel.images.collectAsState()
     val selected by viewModel.selected.collectAsState()
+    val project by viewModel.project.collectAsState()
     val error by viewModel.error.collectAsState()
     val sortDesc by viewModel.sortDesc.collectAsState()
+    val imagesRevision by viewModel.imagesRevision.collectAsState()
     val batchMode = selected.isNotEmpty()
     // 展示顺序统一按命名序号排序（升/降序由排序按钮切换）
     val sortedImages = remember(images, sortDesc) {
@@ -96,20 +110,45 @@ fun ProjectDetailScreen(
     }
 
     var viewerIndex by remember { mutableStateOf<Int?>(null) }
-    var renameTarget by remember { mutableStateOf<ImageInfo?>(null) }
+    var editorTarget by remember { mutableStateOf<ImageInfo?>(null) }
+    var showBatchEditor by remember { mutableStateOf(false) }
     var showExportResult by remember { mutableStateOf(false) }
     var showBatchExport by remember { mutableStateOf(false) }
     var exporting by remember { mutableStateOf(false) }
 
     LaunchedEffect(projectId) { viewModel.load(projectId) }
 
-    // 顶部动态模糊：内容滚动时毛玻璃标题栏渐入
-    val backdrop = rememberLayerBackdrop()
-    val gridState = rememberLazyGridState()
-    val blurFraction = rememberTopBarBlurFraction(gridState)
+    // 顶部液态玻璃：内容滚动时玻璃标题栏渐入
+    val liquidAmbient = rememberLiquidBackdrop()
+    val liquidContent = rememberLiquidContentBackdrop()
+    // 瀑布流：按累计高宽比贪心分到两列，列内紧排无空隙；整页单一滚动（所有图片一起滑动）
+    val masonry = remember(sortedImages) { splitMasonry(sortedImages) }
+    val scrollState = rememberScrollState()
+    val blurFraction = rememberTopBarBlurFraction(scrollState)
     var barHeight by remember { mutableStateOf(0.dp) }
 
+    // 切换排序后内容重排，统一回到顶部，避免停在异常位置
+    LaunchedEffect(sortDesc) {
+        scrollState.scrollTo(0)
+    }
+
+    val onThumbClick: (ImageInfo) -> Unit = { image ->
+        if (batchMode) {
+            viewModel.toggleSelect(image.id)
+        } else {
+            viewerIndex = sortedImages.indexOfFirst { it.id == image.id }.takeIf { it >= 0 }
+        }
+    }
+    val onThumbLongPress: (ImageInfo) -> Unit = { image ->
+        if (!batchMode) {
+            viewModel.clearSelection()
+            viewModel.toggleSelect(image.id)
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
+        // 环境光斑玻璃层：批量编辑器等悬浮元素液态玻璃采样它
+        AmbientGlassLayer(liquidAmbient)
         if (images.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -117,63 +156,83 @@ fun ProjectDetailScreen(
                     .padding(top = barHeight),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("暂无图片", style = MiuixTheme.textStyles.body1)
+                Text(stringResource(R.string.detail_no_images), style = MiuixTheme.textStyles.body1)
             }
         } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                state = gridState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .layerBackdrop(backdrop).ambientGlassBackground(),
-                contentPadding = PaddingValues(
-                    top = barHeight + 16.dp,
-                    start = 16.dp,
-                    end = 16.dp,
-                    bottom = 16.dp,
-                ),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+            // 瀑布流：两列各自从上到下紧排（保留原图宽高比，列内无空隙），
+            // 整体放在单一 verticalScroll 容器里 —— 滑动时所有图片一起移动。
+            // 禁用边缘 overscroll 弹动：平台弹动位移是绘制期变换（EdgeEffect/RenderNode），
+            // 采样录层与玻璃坐标均不可见——弹动期间顶栏/悬浮玻璃折射会冻结在上一帧造成错位；
+            // 禁用后边缘滑动无位移，玻璃折射始终与可见内容一致。
+            CompositionLocalProvider(LocalOverscrollFactory provides null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        // redrawOn：每次 scrollState.value 变化时强制重绘，
+                        // 配合各玻璃元素的 redrawKey 让消费层重新采样。
+                        .redrawOn(scrollState.value)
+                        .liquidGlassLayer(liquidContent)
+                        .padding(start = 16.dp, end = 16.dp, top = barHeight + 16.dp, bottom = 16.dp),
                 ) {
-                    items(sortedImages, key = { it.id }) { image ->
-                        ImageThumb(
-                            image = image,
-                            selected = image.id in selected,
-                            onClick = {
-                                if (batchMode) {
-                                    viewModel.toggleSelect(image.id)
-                                } else {
-                                    viewerIndex = sortedImages.indexOfFirst { it.id == image.id }.takeIf { it >= 0 }
-                                }
-                            },
-                            onLongPress = {
-                                if (!batchMode) {
-                                    viewModel.clearSelection()
-                                    viewModel.toggleSelect(image.id)
-                                }
-                            },
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        MasonryColumn(
+                            images = masonry.first,
+                            selected = selected,
+                            revision = imagesRevision,
+                            onThumbClick = onThumbClick,
+                            onThumbLongPress = onThumbLongPress,
+                            modifier = Modifier.weight(1f),
+                        )
+                        MasonryColumn(
+                            images = masonry.second,
+                            selected = selected,
+                            revision = imagesRevision,
+                            onThumbClick = onThumbClick,
+                            onThumbLongPress = onThumbLongPress,
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
             }
+        }
 
         // 批量管理模式：右下角「导出」玻璃按钮（按当前勾选导出）
         if (batchMode && selected.isNotEmpty()) {
+            // 「编辑」在「导出」上方：进入批量图片编辑器（打开第一张选中图，可左右滑动其余选中图）
+            GlassFloatingButton(
+                icon = MiuixIcons.Edit,
+                contentDescription = stringResource(R.string.detail_edit_selected),
+                onClick = { showBatchEditor = true },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 24.dp, bottom = 92.dp),
+                size = 56.dp,
+                liquidBackdrop = liquidContent,
+                redrawKey = scrollState.value,
+            )
             GlassFloatingButton(
                 icon = MiuixIcons.Download,
-                contentDescription = "导出选中图片",
+                contentDescription = stringResource(R.string.detail_export_selected),
                 onClick = { showBatchExport = true },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(24.dp),
                 size = 56.dp,
+                liquidBackdrop = liquidContent,
+                redrawKey = scrollState.value,
             )
         }
 
         // 顶部栏最后声明：绘制在网格之上，滚动图片不会盖住它，触摸也优先于网格
-        BlurTopBar(
-            backdrop = backdrop,
+        // refreshKey 传滚动偏移：顶栏玻璃层随滚动实时重绘，折射内容跟随时移画面移动
+        LiquidTopBar(
+            backdrop = liquidContent,
             fraction = blurFraction,
+            refreshKey = scrollState.value,
             modifier = Modifier.align(Alignment.TopCenter),
             onHeightChanged = { barHeight = it },
         ) {
@@ -182,35 +241,94 @@ fun ProjectDetailScreen(
                     .fillMaxWidth()
                     .padding(top = 48.dp, start = 4.dp, end = 8.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(MiuixIcons.Back, contentDescription = "返回")
+                // 返回玻璃圆钮：折射透出滚动内容
+                GlassChipButton(
+                    onClick = onBack,
+                    modifier = Modifier.size(40.dp),
+                    liquidBackdrop = liquidContent,
+                    redrawKey = scrollState.value,
+                    shape = CircleShape,
+                ) {
+                    Icon(
+                        MiuixIcons.Back,
+                        contentDescription = stringResource(R.string.back),
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
                 Text(
-                    "项目详情",
+                    stringResource(R.string.detail_title),
                     style = MiuixTheme.textStyles.title1,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).padding(start = 8.dp),
                 )
                 if (batchMode) {
-                    TextButton(
-                        text = if (selected.size == images.size) "取消全选" else "全选",
+                    GlassChipButton(
                         onClick = { viewModel.toggleSelectAll() },
-                    )
-                    IconButton(onClick = {
-                        viewModel.deleteSelected()
-                        viewModel.clearSelection()
-                    }) {
-                        Icon(MiuixIcons.Delete, contentDescription = "删除选中", tint = MiuixTheme.colorScheme.error)
+                        liquidBackdrop = liquidContent,
+                        redrawKey = scrollState.value,
+                    ) {
+                        Text(
+                            stringResource(
+                                if (selected.size == images.size) R.string.detail_deselect_all
+                                else R.string.detail_select_all,
+                            ),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        )
                     }
-                    TextButton(text = "完成", onClick = { viewModel.clearSelection() })
+                    GlassChipButton(
+                        onClick = {
+                            viewModel.deleteSelected()
+                            viewModel.clearSelection()
+                        },
+                        modifier = Modifier.size(40.dp),
+                        liquidBackdrop = liquidContent,
+                        redrawKey = scrollState.value,
+                        shape = CircleShape,
+                    ) {
+                        Icon(
+                            MiuixIcons.Delete,
+                            contentDescription = stringResource(R.string.project_delete_selected),
+                            tint = MiuixTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    GlassChipButton(
+                        onClick = { viewModel.clearSelection() },
+                        liquidBackdrop = liquidContent,
+                        redrawKey = scrollState.value,
+                    ) {
+                        Text(
+                            stringResource(R.string.project_done),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        )
+                    }
                 } else {
-                    TextButton(
-                        text = if (sortDesc) "9→1" else "1→9",
+                    // 排序玻璃按钮：只显示当前排列方向（顺序 / 逆序），点击切换
+                    GlassChipButton(
                         onClick = { viewModel.toggleSort() },
-                    )
-                    TextButton(text = "批量管理", onClick = {
-                        if (images.isNotEmpty()) viewModel.toggleSelect(images.first().id)
-                    })
+                        liquidBackdrop = liquidContent,
+                        redrawKey = scrollState.value,
+                    ) {
+                        Text(
+                            stringResource(
+                                if (sortDesc) R.string.detail_sort_desc else R.string.detail_sort_asc,
+                            ),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        )
+                    }
+                    GlassChipButton(
+                        onClick = {
+                            if (images.isNotEmpty()) viewModel.toggleSelect(images.first().id)
+                        },
+                        liquidBackdrop = liquidContent,
+                        redrawKey = scrollState.value,
+                    ) {
+                        Text(
+                            stringResource(R.string.project_batch),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        )
+                    }
                 }
             }
         }
@@ -246,10 +364,10 @@ fun ProjectDetailScreen(
 
     // 导出进行中加载弹窗
     if (exporting) {
-        OverlayDialog(
+        GlassDialog(
             show = true,
-            title = "正在导出…",
-            summary = "图片较多时可能需要一点时间，请勿退出应用",
+            title = stringResource(R.string.detail_exporting),
+            summary = stringResource(R.string.detail_exporting_hint),
             onDismissRequest = { },
         ) {
             Column(
@@ -268,8 +386,9 @@ fun ProjectDetailScreen(
         FullScreenViewer(
             images = sortedImages,
             initialIndex = idx,
+            revision = imagesRevision,
             onDismiss = { viewerIndex = null },
-            onRename = { renameTarget = it },
+            onEdit = { image -> editorTarget = image },
             onExport = { image ->
                 viewModel.exportToGallery(image) { ok -> showExportResult = ok }
                 viewerIndex = null
@@ -278,63 +397,93 @@ fun ProjectDetailScreen(
     }
 
     if (showExportResult) {
-        OverlayDialog(
+        GlassDialog(
             show = true,
-            title = "导出",
-            summary = "已导出到系统相册的 Pictures/HyperSS 目录。",
+            title = stringResource(R.string.export),
+            summary = stringResource(R.string.detail_export_done),
             onDismissRequest = { showExportResult = false },
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
             ) {
-                TextButton(text = "知道了", onClick = { showExportResult = false })
+                TextButton(text = stringResource(R.string.ok), onClick = { showExportResult = false })
             }
         }
     }
 
-    // 重命名别名
-    renameTarget?.let { image ->
-        var alias by remember(image.id) { mutableStateOf(image.alias ?: "") }
-        OverlayDialog(
-            show = true,
-            title = "重命名显示别名",
-            onDismissRequest = { renameTarget = null },
-        ) {
-            Column {
-                TextField(
-                    value = alias,
-                    onValueChange = { alias = it },
-                    label = "显示别名（不影响文件名）",
-                    singleLine = true,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    "文件名保持 ${image.fileName} 不变",
-                    style = MiuixTheme.textStyles.body2,
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                TextButton(
-                    text = "取消",
-                    onClick = { renameTarget = null },
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(modifier = Modifier.width(20.dp))
-                TextButton(
-                    text = "保存",
-                    onClick = {
-                        viewModel.renameAlias(image.id, alias)
-                        renameTarget = null
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                )
-            }
+    // 图片编辑器（水印 / 马赛克 / 重命名）
+    editorTarget?.let { image ->
+        ImageEditorScreen(
+            image = image,
+            viewModel = viewModel,
+            onDismiss = { editorTarget = null },
+        )
+    }
+
+    // 批量图片编辑器（选中图片左右滑动；水印共享、马赛克按图涂抹、重命名改项目名）
+    if (showBatchEditor) {
+        val selectedImages = sortedImages.filter { it.id in selected }
+        if (selectedImages.isEmpty()) {
+            // 勾选被清空时自动退出，避免停在无内容的编辑器上
+            LaunchedEffect(Unit) { showBatchEditor = false }
+        } else {
+            BatchImageEditorScreen(
+                images = selectedImages,
+                projectName = project?.displayName ?: "",
+                viewModel = viewModel,
+                onDismiss = { showBatchEditor = false },
+            )
+        }
+    }
+}
+
+/** 瀑布流分列：按累计高宽比贪心分配到较矮的一列，两列总高尽量均衡。 */
+private fun splitMasonry(images: List<ImageInfo>): Pair<List<ImageInfo>, List<ImageInfo>> {
+    val left = mutableListOf<ImageInfo>()
+    val right = mutableListOf<ImageInfo>()
+    var leftH = 0f
+    var rightH = 0f
+    for (img in images) {
+        // 列宽相同 → 相对高度 = 高/宽（与 ImageThumb 的 aspectRatio 裁剪一致）
+        val relH = if (img.widthPx > 0) {
+            (img.heightPx.toFloat() / img.widthPx.toFloat()).coerceIn(0.625f, 5f)
+        } else {
+            1f
+        }
+        if (leftH <= rightH) {
+            left.add(img)
+            leftH += relH
+        } else {
+            right.add(img)
+            rightH += relH
+        }
+    }
+    return left to right
+}
+
+/** 瀑布流单列：普通 Column（非懒加载），自然宽高比堆叠，列内 12dp 间距、无空隙。 */
+@Composable
+private fun MasonryColumn(
+    images: List<ImageInfo>,
+    selected: Set<Long>,
+    revision: Int,
+    onThumbClick: (ImageInfo) -> Unit,
+    onThumbLongPress: (ImageInfo) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        images.forEach { image ->
+            ImageThumb(
+                image = image,
+                revision = revision,
+                selected = image.id in selected,
+                onClick = { onThumbClick(image) },
+                onLongPress = { onThumbLongPress(image) },
+            )
         }
     }
 }
@@ -343,6 +492,7 @@ fun ProjectDetailScreen(
 @Composable
 private fun ImageThumb(
     image: ImageInfo,
+    revision: Int,
     selected: Boolean,
     onClick: () -> Unit,
     onLongPress: () -> Unit,
@@ -363,6 +513,7 @@ private fun ImageThumb(
                 image.filePath,
             ).absolutePath,
             maxDim = 512,
+            version = revision,
         )
         if (bmp != null) {
             Image(
@@ -423,14 +574,17 @@ private fun ImageThumb(
 private fun FullScreenViewer(
     images: List<ImageInfo>,
     initialIndex: Int,
+    revision: Int,
     onDismiss: () -> Unit,
-    onRename: (ImageInfo) -> Unit,
+    onEdit: (ImageInfo) -> Unit,
     onExport: (ImageInfo) -> Unit,
 ) {
     val pagerState = rememberPagerState(initialPage = initialIndex.coerceIn(0, images.size - 1)) {
         images.size
     }
     val scope = rememberCoroutineScope()
+    // 液态玻璃采样层：记录「黑底 + 当前页图片」，悬浮玻璃元素折射透出图片画面
+    val canvasLayer = rememberBlackCanvasBackdrop()
 
     Box(
         modifier = Modifier
@@ -439,22 +593,28 @@ private fun FullScreenViewer(
     ) {
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .liquidGlassLayer(canvasLayer),
             key = { images[it].id },
         ) { page ->
-            ZoomableImage(image = images[page])
+            ZoomableImage(image = images[page], revision = revision)
         }
 
         // 当前图片操作：作用于正在查看的这一张
         val current = images[pagerState.currentPage.coerceIn(0, images.size - 1)]
+        // 悬浮玻璃元素的下垫色：压暗保证白字/白图标可读，同时保留折射透出
+        val chipTint = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.55f)
 
         // 页码指示
-        Surface(
+        GlassSurface(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = 60.dp),
-            shape = RoundedCornerShape(14.dp),
-            color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f),
+            cornerRadius = 14.dp,
+            background = chipTint,
+            liquidBackdrop = canvasLayer,
+            redrawKey = pagerState.currentPage,
         ) {
             Text(
                 "${pagerState.currentPage + 1} / ${images.size}",
@@ -464,49 +624,55 @@ private fun FullScreenViewer(
             )
         }
 
-        Surface(
+        GlassSurface(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 26.dp, end = 16.dp)
                 .size(40.dp),
-            shape = RoundedCornerShape(20.dp),
-            color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f),
+            cornerRadius = 20.dp,
+            background = chipTint,
+            liquidBackdrop = canvasLayer,
+            redrawKey = pagerState.currentPage,
         ) {
             IconButton(onClick = onDismiss) {
-                Icon(MiuixIcons.Close, contentDescription = "关闭", tint = androidx.compose.ui.graphics.Color.White)
+                Icon(MiuixIcons.Close, contentDescription = stringResource(R.string.close), tint = androidx.compose.ui.graphics.Color.White)
             }
         }
 
         // 左右翻页按钮（到边界时隐藏）；两端使用同类型的箭头图标
         if (pagerState.currentPage > 0) {
-            Surface(
+            GlassSurface(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
                     .padding(start = 12.dp)
                     .size(44.dp),
-                shape = RoundedCornerShape(22.dp),
-                color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f),
+                cornerRadius = 22.dp,
+                background = chipTint,
+                liquidBackdrop = canvasLayer,
+                redrawKey = pagerState.currentPage,
             ) {
                 IconButton(onClick = {
                     scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
                 }) {
-                    Icon(MiuixIcons.ChevronBackward, contentDescription = "上一张", tint = androidx.compose.ui.graphics.Color.White)
+                    Icon(MiuixIcons.ChevronBackward, contentDescription = stringResource(R.string.viewer_prev), tint = androidx.compose.ui.graphics.Color.White)
                 }
             }
         }
         if (pagerState.currentPage < images.size - 1) {
-            Surface(
+            GlassSurface(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .padding(end = 12.dp)
                     .size(44.dp),
-                shape = RoundedCornerShape(22.dp),
-                color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f),
+                cornerRadius = 22.dp,
+                background = chipTint,
+                liquidBackdrop = canvasLayer,
+                redrawKey = pagerState.currentPage,
             ) {
                 IconButton(onClick = {
                     scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
                 }) {
-                    Icon(MiuixIcons.ChevronForward, contentDescription = "下一张", tint = androidx.compose.ui.graphics.Color.White)
+                    Icon(MiuixIcons.ChevronForward, contentDescription = stringResource(R.string.viewer_next), tint = androidx.compose.ui.graphics.Color.White)
                 }
             }
         }
@@ -517,20 +683,24 @@ private fun FullScreenViewer(
                 .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f),
+            GlassSurface(
+                cornerRadius = 20.dp,
+                background = chipTint,
+                liquidBackdrop = canvasLayer,
+                redrawKey = pagerState.currentPage,
             ) {
-                IconButton(onClick = { onRename(current) }) {
-                    Icon(MiuixIcons.Edit, contentDescription = "重命名", tint = androidx.compose.ui.graphics.Color.White)
+                IconButton(onClick = { onEdit(current) }) {
+                    Icon(MiuixIcons.Edit, contentDescription = stringResource(R.string.edit), tint = androidx.compose.ui.graphics.Color.White)
                 }
             }
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f),
+            GlassSurface(
+                cornerRadius = 20.dp,
+                background = chipTint,
+                liquidBackdrop = canvasLayer,
+                redrawKey = pagerState.currentPage,
             ) {
                 IconButton(onClick = { onExport(current) }) {
-                    Icon(MiuixIcons.Share, contentDescription = "导出", tint = androidx.compose.ui.graphics.Color.White)
+                    Icon(MiuixIcons.Share, contentDescription = stringResource(R.string.export), tint = androidx.compose.ui.graphics.Color.White)
                 }
             }
         }
@@ -539,7 +709,7 @@ private fun FullScreenViewer(
 
 /** 单页可缩放图片：双指缩放/平移；单指滑动不消费，交给 Pager 翻页。 */
 @Composable
-private fun ZoomableImage(image: ImageInfo) {
+private fun ZoomableImage(image: ImageInfo, revision: Int) {
     var scale by remember(image.id) { mutableFloatStateOf(1f) }
     var offsetX by remember(image.id) { mutableFloatStateOf(0f) }
     var offsetY by remember(image.id) { mutableFloatStateOf(0f) }
@@ -578,7 +748,7 @@ private fun ZoomableImage(image: ImageInfo) {
                 }
             },
     ) {
-        val bmp = rememberScaledBitmap(path, maxDim = 4096)
+        val bmp = rememberScaledBitmap(path, maxDim = 4096, version = revision)
         if (bmp != null) {
             Image(
                 bitmap = bmp,
@@ -616,13 +786,13 @@ private fun BatchExportDialog(
     var previewPages by remember { mutableStateOf<List<android.graphics.Bitmap>?>(null) }
     var previewLoading by remember { mutableStateOf(false) }
 
-    OverlayDialog(
+    GlassDialog(
         show = true,
-        title = "导出 $imageCount 张图片",
+        title = stringResource(R.string.detail_batch_export_title, imageCount),
         summary = if (pdfMode) {
-            "PDF 每页排列 $perPage 张，导出到 Download/HyperSSDL"
+            stringResource(R.string.detail_batch_desc_pdf, perPage)
         } else {
-            "图片将导出到系统相册 Pictures/HyperSS"
+            stringResource(R.string.detail_batch_desc_images)
         },
         onDismissRequest = onDismiss,
     ) {
@@ -630,13 +800,13 @@ private fun BatchExportDialog(
             // 模式选择
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextButton(
-                    text = "图片导出",
+                    text = stringResource(R.string.detail_export_images_btn),
                     onClick = onExportImages,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.textButtonColorsPrimary(),
                 )
                 TextButton(
-                    text = if (pdfMode) "收起 PDF 选项" else "PDF 导出",
+                    text = stringResource(if (pdfMode) R.string.detail_pdf_collapse else R.string.detail_export_pdf_btn),
                     onClick = {
                         pdfMode = !pdfMode
                         previewPages = null
@@ -647,25 +817,26 @@ private fun BatchExportDialog(
 
             if (pdfMode) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("每页图片数（按比例缩放排列）", style = MiuixTheme.textStyles.body2)
+                Text(stringResource(R.string.detail_per_page_label), style = MiuixTheme.textStyles.body2)
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(1, 2, 3, 4).forEach { n ->
                         val active = perPage == n
-                        Surface(
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (active) MiuixTheme.colorScheme.primary
-                            else MiuixTheme.colorScheme.surfaceVariant,
+                        GlassButton(
                             onClick = {
                                 perPage = n
                                 previewPages = null
                             },
+                            modifier = Modifier.weight(1f),
+                            cornerRadius = 12.dp,
+                            background = if (active) MiuixTheme.colorScheme.primary
+                            else MiuixTheme.colorScheme.surfaceVariant,
                         ) {
                             Text(
-                                "$n 张/页",
+                                stringResource(R.string.detail_per_page, n),
                                 style = MiuixTheme.textStyles.body2,
-                                color = androidx.compose.ui.graphics.Color.White,
+                                color = if (active) androidx.compose.ui.graphics.Color.White
+                                else MiuixTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(vertical = 8.dp),
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                             )
@@ -677,14 +848,16 @@ private fun BatchExportDialog(
                 TextField(
                     value = fileName,
                     onValueChange = { fileName = it },
-                    label = "PDF 文件名",
+                    label = stringResource(R.string.detail_pdf_name_label),
                     singleLine = true,
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     TextButton(
-                        text = if (previewLoading) "生成预览…" else "预览布局",
+                        text = stringResource(
+                            if (previewLoading) R.string.detail_preview_generating else R.string.detail_preview_btn,
+                        ),
                         onClick = {
                             previewLoading = true
                             onPreview(perPage) { pages ->
@@ -695,7 +868,7 @@ private fun BatchExportDialog(
                         modifier = Modifier.weight(1f),
                     )
                     TextButton(
-                        text = "导出 PDF",
+                        text = stringResource(R.string.detail_export_pdf_btn),
                         onClick = { onExportPdf(perPage, fileName.trim().ifEmpty { com.hyperss.app.util.PdfUtils.defaultPdfName() }) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColorsPrimary(),
@@ -705,7 +878,7 @@ private fun BatchExportDialog(
                 previewPages?.let { pages ->
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "共 ${pages.size} 页（A4 纵向）",
+                        stringResource(R.string.detail_pdf_pages, pages.size),
                         style = MiuixTheme.textStyles.footnote2,
                     )
                     Spacer(modifier = Modifier.height(6.dp))
@@ -715,7 +888,7 @@ private fun BatchExportDialog(
                         items(pages.size) { i ->
                             androidx.compose.foundation.Image(
                                 bitmap = pages[i].asImageBitmap(),
-                                contentDescription = "第 ${i + 1} 页预览",
+                                contentDescription = stringResource(R.string.detail_page_preview, i + 1),
                                 modifier = Modifier
                                     .width(96.dp)
                                     .aspectRatio(PdfUtils.PAGE_W / PdfUtils.PAGE_H)

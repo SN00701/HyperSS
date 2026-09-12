@@ -79,7 +79,7 @@ class CaptureViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 val p = repo.createProject(
                     if (s.newProjectPrefix.isBlank()) "hs" else s.newProjectPrefix,
-                    if (s.newProjectName.isBlank()) "新项目" else s.newProjectName,
+                    if (s.newProjectName.isBlank()) getApplication<android.app.Application>().getString(com.hyperss.app.R.string.capture_default_project_name) else s.newProjectName,
                 )
                 setup.value = setup.value.copy(selectedProjectId = p.id, projects = setup.value.projects + p)
                 onDone(p.id)

@@ -64,6 +64,11 @@ object CaptureController {
 
     val isActive: Boolean get() = _state.value is State.Active || _state.value is State.Paused
 
+    /** 本地化的「未知错误」文案（核心上下文未初始化时回退常量）。 */
+    private fun unknownError(): String = runCatching {
+        RustBridge.appContext.getString(com.hyperss.app.R.string.error_unknown)
+    }.getOrDefault("未知错误")
+
     /** 设置标定步长（像素），后续 start() 会优先使用该值。 */
     fun setCalibratedOffset(offsetPx: UInt) {
         if (offsetPx > 0u) calibratedOffsetPx = offsetPx
@@ -97,7 +102,7 @@ object CaptureController {
             } catch (e: CoreException) {
                 _state.value = State.Failed(repo.describe(e))
             } catch (e: Throwable) {
-                _state.value = State.Failed(e.message ?: "未知错误")
+                _state.value = State.Failed(e.message ?: unknownError())
             }
         }
     }
@@ -172,13 +177,13 @@ object CaptureController {
             }
             return true
         } catch (e: CoreException.StitchLowConfidence) {
-            pause("画面跳变，等待手动处理")
+            pause("jump")
             return false
         } catch (e: CoreException) {
             _state.value = State.Failed(repo.describe(e))
             return false
         } catch (e: Throwable) {
-            _state.value = State.Failed(e.message ?: "未知错误")
+            _state.value = State.Failed(e.message ?: unknownError())
             return false
         }
     }
@@ -200,7 +205,7 @@ object CaptureController {
             _state.value = State.Failed(repo.describe(e))
             return false
         } catch (e: Throwable) {
-            _state.value = State.Failed(e.message ?: "未知错误")
+            _state.value = State.Failed(e.message ?: unknownError())
             return false
         }
     }
