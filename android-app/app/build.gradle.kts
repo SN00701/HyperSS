@@ -57,10 +57,11 @@ android {
         // 保证开源环境下 release APK 也可直接安装。真实密钥严禁入库（见 .gitignore）。
         create("release") {
             val releaseKeystore = rootProject.file("release.jks")
-            if (releaseKeystore.exists() &&
-                System.getenv("KEYSTORE_PASSWORD") != null &&
-                System.getenv("KEY_ALIAS") != null
-            ) {
+            // 密钥文件存在且非空、密码与别名均非空才使用发布签名，否则回退 debug 签名
+            // （CI 上 Secret 未配置时 echo 会产生空文件，空字符串环境变量也不算有效密钥）。
+            val hasSecrets = System.getenv("KEYSTORE_PASSWORD")?.isNotBlank() == true &&
+                System.getenv("KEY_ALIAS")?.isNotBlank() == true
+            if (releaseKeystore.exists() && releaseKeystore.length() > 0 && hasSecrets) {
                 storeFile = releaseKeystore
                 storePassword = System.getenv("KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("KEY_ALIAS")

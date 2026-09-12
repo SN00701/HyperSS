@@ -20,10 +20,20 @@ jobs:
           rustup target add aarch64-linux-android x86_64-linux-android
           cargo install cargo-ndk
 
-      - name: 还原签名文件（仅构建期使用，不落盘进仓库）
-        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > android-app/release.jks
-        env:
-          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+      - name: 还原签名文件（仅构建期使用，不落盘进仓库；无效时回退 debug 签名）
+        run: |
+          if [ -n "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > android-app/release.jks
+          fi
+          if [ -s android-app/release.jks ]; then
+            if ! keytool -list -keystore android-app/release.jks -storepass "${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" > /dev/null 2>&1; then
+              echo "::warning::release.jks 无效或密码不匹配，本次回退 debug 签名（与历史发布版本一致）"
+              rm -f android-app/release.jks
+            fi
+          else
+            rm -f android-app/release.jks
+            echo "::warning::未配置有效签名密钥，本次回退 debug 签名（与历史发布版本一致）"
+          fi
 
       - name: 接受 SDK 许可（compileSdk 高版本平台需自动下载）
         run: yes | sdkmanager --licenses > /dev/null || true
