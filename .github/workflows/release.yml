@@ -30,7 +30,12 @@ jobs:
 
       - name: 打包（自动携带版本号递增逻辑）
         working-directory: android-app
-        run: ./gradlew :app:assembleRelease
+        run: |
+          set -o pipefail
+          ./gradlew :app:assembleRelease --stacktrace 2>&1 | tee build-ci.log || {
+            grep -E "FAILURE:|What went wrong|Caused by:|error:|Error:|Execution failed" build-ci.log | tail -25 | while IFS= read -r l; do echo "::error::${l:0:200}"; done
+            exit 1
+          }
         env:
           KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
